@@ -1,5 +1,6 @@
 # test_matcher.py - automatic checks for the parts of JD Decoder that use plain rules
 from bullets import unsupported_numbers
+from evidence import verified
 from matcher import MatchResult, match, mentions
 
 
@@ -57,3 +58,15 @@ def test_invented_number_is_caught():
     assert unsupported_numbers(
         "Cut costs by 40%", "Ran operations for online banking"
     ) == {"40"}
+
+def test_quote_in_resume_is_verified():
+    resume = "Built monitoring with Dynatrace"
+    assert verified("built  MONITORING with dynatrace", resume)
+
+
+def test_invented_quote_is_rejected():
+    assert not verified("Managed Terraform for 50 teams", "Built monitoring with Dynatrace")
+
+
+def test_empty_quote_is_rejected():
+    assert not verified("   ", "Built monitoring with Dynatrace")
