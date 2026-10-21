@@ -10,6 +10,21 @@ ALIASES = {
     "incident management": ["incident response"],
 }
 
+# Words that describe a skill without identifying it: "Monitoring Tools" is really "monitoring"
+FILLER = {
+    "best",
+    "concepts",
+    "experience",
+    "focus",
+    "it",
+    "knowledge",
+    "management",
+    "practices",
+    "skills",
+    "tool",
+    "tools",
+}
+
 
 def skill_pattern(skill: str) -> str:
     """Build a pattern that matches the skill as a whole word."""
@@ -28,6 +43,25 @@ def mentions(text: str, skill: str) -> bool:
     for name in names:
         # re.search() looks anywhere in the text; it returns None when there's no match
         if re.search(skill_pattern(name), text, re.IGNORECASE):
+            return True
+    # Last chance: the skill's core words on one line ("Monitoring Tools" -> "monitoring")
+    return mentions_core(text, skill)
+
+
+def core_words(skill: str) -> list[str]:
+    """The words that identify a skill, without the filler words."""
+    # [a-z0-9+#]+ means "a run of letters, digits, + or #", so "C++" and "C#" stay whole
+    return [w for w in re.findall(r"[a-z0-9+#]+", skill.lower()) if w not in FILLER]
+
+
+def mentions_core(text: str, skill: str) -> bool:
+    """True if one line of the text has every core word of a multi-word skill."""
+    words = core_words(skill)
+    if len(skill.split()) < 2 or not words:  # only for skills of 2+ words
+        return False
+    for line in text.splitlines():
+        # all() is True only if every core word is on this same line
+        if all(re.search(skill_pattern(w), line, re.IGNORECASE) for w in words):
             return True
     return False
 
