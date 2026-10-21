@@ -4,21 +4,13 @@
 import json
 import sys
 
+from matcher import find_skills  # the new regex version, from matcher.py
+
 
 def load_skills(path="skills.json"):
     """Read the list of skills to look for from a JSON file."""
     with open(path) as f:
         return json.load(f)
-
-
-def find_skills(text, skills):
-    """Return the skills from the list that appear anywhere in the text."""
-    text = text.lower()  # compare in lowercase so "Python" matches "python"
-    found = []
-    for skill in skills:
-        if skill.lower() in text:
-            found.append(skill)
-    return found
 
 
 def main():
