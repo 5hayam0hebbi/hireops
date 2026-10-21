@@ -17,7 +17,7 @@ Give it a job description and your resume. It tells you:
 
 ### Example
 
-    ![JD Decoder output on a sample job](docs/jd-decoder.png)
+![JD Decoder output on a sample job](docs/jd-decoder.png)
 
 ### Getting started (one time)
 
