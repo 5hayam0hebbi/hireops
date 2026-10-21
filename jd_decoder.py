@@ -17,6 +17,8 @@ def print_insights(insights):
     # Dot notation reads an object's attributes: insights.role_title
     print(f"Role: {insights.role_title} ({insights.seniority})")
     # ", ".join(list) glues the items into one string with commas between
+    if insights.years_experience:  # None and 0 both count as False
+       print(f"Experience asked for: {insights.years_experience}+ years")
     print(f"Skills the AI found ({len(insights.skills)}): {', '.join(insights.skills)}")
     print("Must-haves:")
     for item in insights.must_haves:
@@ -25,6 +27,8 @@ def print_insights(insights):
     for item in insights.nice_to_haves:
         print("  - " + item)
     print("Possible red flags:")
+    if not insights.red_flags:  # an empty list counts as False
+      print("  none found")
     for item in insights.red_flags:
         print("  - " + item)
 

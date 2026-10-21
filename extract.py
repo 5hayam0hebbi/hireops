@@ -10,6 +10,7 @@ MODEL = "llama3.2"
 class JobInsights(BaseModel):
     role_title: str
     seniority: str  # junior, mid, senior, lead or executive
+    years_experience: int | None = None  # None (null in JSON) when the posting doesn't say
     skills: list[str]  # every skill the posting asks for, found by the AI
     must_haves: list[str]
     nice_to_haves: list[str]
@@ -19,6 +20,7 @@ class JobInsights(BaseModel):
 PROMPT = """You are a careful, honest recruiter. Read the job description and reply in JSON.
 role_title: the job title.
 seniority: one of junior, mid, senior, lead, executive.
+years_experience: the minimum years of experience asked for, or null if not stated.
 skills: every skill, tool, technology, method or competency the posting asks for,
 each as a short name of 1 to 3 words, for example "Kubernetes", "Terraform",
 "incident management", "stakeholder communication". No duplicates.
