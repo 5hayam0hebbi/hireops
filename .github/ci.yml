@@ -1,0 +1,28 @@
+# ci.yml - GitHub Actions runs these steps on a fresh Linux machine after every push
+name: CI
+
+# When to run: every push, and every pull request
+on: [push, pull_request]
+
+jobs:
+  test:
+    # A clean Ubuntu Linux computer in GitHub's cloud, free for public repos
+    runs-on: ubuntu-latest
+    steps:
+      # Download your repo's code onto that machine
+      - uses: actions/checkout@v6
+      # Install Python 3.12 there
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # Install exactly the packages listed in requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      # Check the code with Ruff; any problem fails the run
+      - name: Lint with Ruff
+        run: ruff check .
+      # Run every test; any failure fails the run
+      - name: Run tests
+        run: pytest -v
