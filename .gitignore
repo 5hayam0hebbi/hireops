@@ -4,3 +4,4 @@ private/
 hireops.log
 .pytest_cache/
 .ruff_cache/
+__pycache__/
