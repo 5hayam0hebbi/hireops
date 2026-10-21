@@ -38,15 +38,6 @@ def main():
     for skill in wanted:
         print("  - " + skill)
 
-
-# Run main() only when this file is run directly, not when it's imported
-if __name__ == "__main__":
-    try:
-        main()
-    except FileNotFoundError as error:
-        # error.filename is the name of the file that couldn't be found
-        print(f"Couldn't find the file {error.filename}. Check the name and try again.")
-
     # A second file name means a resume was given too
     if len(sys.argv) > 2:
         with open(sys.argv[2]) as f:
@@ -69,4 +60,14 @@ if __name__ == "__main__":
         print(f"Match score: {score}% ({len(have)} of {len(wanted)} skills)")
         print("Missing from your resume:")
         for skill in missing:
-            print("  - " + skill)
+            print("  - " + skill)  
+
+
+# Run main() only when this file is run directly, not when it's imported
+if __name__ == "__main__":
+    try:
+        main()
+    except FileNotFoundError as error:
+        # error.filename is the name of the file that couldn't be found
+        print(f"Couldn't find the file {error.filename}. Check the name and try again.")
+
