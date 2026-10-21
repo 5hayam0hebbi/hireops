@@ -110,6 +110,19 @@ def main():
             print("  - " + skill)
         # %% writes a real % sign in a log message
         logger.info("Match score %s%% for %s", result.score(), args.job)
+        if not args.no_ai:
+          from bullets import suggest_bullets, unsupported_numbers
+
+          resume_text = read(args.resume)
+        try:
+                print("\nSuggested resume bullets (check every word before using them):")
+                for bullet in suggest_bullets(job_text, resume_text):
+                    print("  - " + bullet)
+                    invented = unsupported_numbers(bullet, resume_text)
+                    if invented:  # an empty set counts as False
+                        print(f"    WARNING: {', '.join(sorted(invented))} is not in your resume")
+        except ConnectionError:
+                print("Ollama isn't running - no bullet suggestions this time.")
     else:
         print(f"Skills this job asks for: {', '.join(wanted)}")
 
