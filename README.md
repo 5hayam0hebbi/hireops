@@ -17,7 +17,7 @@ Give it a job description and your resume. It tells you:
 
 ### Example
 
-    [paste the output of: python jd_decoder.py samples/job.txt -r samples/resume.md]
+    ![JD Decoder output on a sample job](docs/jd-decoder.png)
 
 ### Getting started (one time)
 
@@ -55,7 +55,7 @@ Your resume and job files never leave your computer. The samples in this repo ar
 
 ### Tests
 
-`pytest -v` runs 18 tests on the rule-based parts, with no AI needed. GitHub Actions runs Ruff and the tests on every push.
+`pytest -v` runs 21 tests on the rule-based parts, with no AI needed. GitHub Actions runs Ruff and the tests on every push.
 
 ### Limitations
 

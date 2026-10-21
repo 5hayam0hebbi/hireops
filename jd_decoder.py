@@ -62,6 +62,8 @@ def print_edits(edits):
         print(f"      why: {edit['reason']}")
         if edit["invented"]:  # a number your resume never mentions
             print(f"      WARNING: {', '.join(edit['invented'])} is not in your resume")
+        if edit["dropped"]:  # facts from your line that the rewrite left out
+            print(f"      NOTE: the rewrite drops {', '.join(edit['dropped'])}")
 
 
 def main():
@@ -198,7 +200,10 @@ def main():
                 print(
                     f"\n4/4 {MODEL} is suggesting edits to your resume...", flush=True
                 )
-                print_edits(suggest_edits(job_text, resume_text, result.missing()))
+                edits = suggest_edits(
+                    job_text, resume_text, result.missing(), by_meaning
+                )
+                print_edits(edits)
             except (ConnectionError, AIError) as error:
                 print(f"No edit suggestions this time: {error}")
                 logger.warning("AI problem: %s", error)

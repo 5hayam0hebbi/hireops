@@ -1,6 +1,12 @@
 # test_matcher.py - automatic checks for the parts of JD Decoder that use plain rules
 from bullets import looks_like_bullet, unsupported_numbers
-from edits import Edit, checked_edits
+from edits import (
+    Removal,
+    dropped_names,
+    new_names,
+    real_removals,
+    rewrite_is_useful,
+)
 from evidence import verified
 from extract import RedFlag, quoted_flags
 from matcher import MatchResult, match, mentions
@@ -106,29 +112,28 @@ def test_red_flag_needs_words_from_the_posting():
     assert [f.concern for f in kept] == ["Heavy on-call"]
 
 
-def test_edits_need_a_real_line_and_new_words():
+def test_rewrite_must_change_the_line_and_name_the_skill():
+    old = "Ran release planning with 6 product teams"
+    assert rewrite_is_useful(
+        old, "Ran SDLC release planning with 6 product teams", "SDLC"
+    )
+    assert not rewrite_is_useful(old, old, "SDLC")  # nothing changed
+    assert not rewrite_is_useful(old, "Ran planning with product teams", "SDLC")
+
+
+def test_removals_need_a_real_line():
     lines = ["Led a team of 25 engineers", "Owned disaster recovery exercises"]
-    edits = [
-        Edit(
-            action="modify",
-            line=1,
-            new_text="Led 25 engineers across the SDLC",
-            reason="x",
-        ),
-        Edit(action="remove", line=9, new_text="", reason="line 9 doesn't exist"),
-        Edit(
-            action="modify",
-            line=2,
-            new_text="Owned disaster recovery exercises",
-            reason="same",
-        ),
-        Edit(
-            action="add", line=0, new_text="disaster recovery", reason="already there"
-        ),
-        Edit(action="add", line=0, new_text="SDLC", reason="new keyword"),
-    ]
-    kept = checked_edits(edits, lines)
-    assert [(e.action, e.new_text) for e in kept] == [
-        ("modify", "Led 25 engineers across the SDLC"),
-        ("add", "SDLC"),
-    ]
+    removals = [Removal(line=2, reason="less relevant"), Removal(line=9, reason="x")]
+    assert [r.line for r in real_removals(removals, lines)] == [2]
+
+
+def test_new_tool_names_are_flagged():
+    resume = "Built monitoring with Dynatrace"
+    new = "Built SDLC monitoring with Dynatrace and Grafana"
+    assert new_names(new, resume, "SDLC") == {"Grafana"}
+
+
+def test_dropped_facts_are_noted():
+    old = "Moved workloads to Azure and Docker containers"
+    new = "Moved workloads to Azure as part of the SDLC"
+    assert dropped_names(old, new) == {"Docker"}
