@@ -51,6 +51,7 @@ def main():
     parser.add_argument("-r", "--resume", help="path to your resume (text or Markdown)")
     # store_true makes a flag: args.no_ai is True if you type --no-ai, else False
     parser.add_argument("--no-ai", action="store_true", help="rules only, skip the AI")
+    parser.add_argument("--json", action="store_true", help="print the match as JSON (needs --resume)")
     args = parser.parse_args()
 
     # Send log messages at level INFO and above to hireops.log, with the time on each line
@@ -81,6 +82,21 @@ def main():
     else:
         wanted = find_skills(job_text, load_skills())
 
+        if args.json:  # machine-readable output for other tools, then stop
+         if not args.resume:
+            print("--json needs --resume")
+            return
+        result = MatchResult(wanted=wanted, have=find_skills(read(args.resume), wanted))
+        data = {
+            "job": args.job,
+            "score": result.score(),
+            "have": result.have,
+            "missing": result.missing(),
+        }
+        # indent=2 puts each item on its own line, easy to read
+        print(json.dumps(data, indent=2))
+        return
+    
     if insights:
         print_insights(insights)
         print()
