@@ -1,65 +1,62 @@
-# jd_decoder.py - HireOps tool 1 (JD Decoder), version 0
-# Reads a job description and lists the skills it asks for.
-# Plain Python, no AI yet: the AI model joins in the next version.
-import json
+# jd_decoder.py - HireOps tool 1 (JD Decoder)
+# The AI reads the job and finds its skills; plain rules check your resume for them.
 import sys
 
-from matcher import find_skills  # the new regex version, from matcher.py
+from extract import extract
+from matcher import MatchResult, find_skills
 
 
-def load_skills(path="skills.json"):
-    """Read the list of skills to look for from a JSON file."""
+def read(path):
+    """Return the whole text of a file."""
     with open(path) as f:
-        return json.load(f)
+        return f.read()
+
+
+def print_insights(insights):
+    """Show what the AI found. insights is a JobInsights object from extract.py."""
+    # Dot notation reads an object's attributes: insights.role_title
+    print(f"Role: {insights.role_title} ({insights.seniority})")
+    # ", ".join(list) glues the items into one string with commas between
+    print(f"Skills the AI found ({len(insights.skills)}): {', '.join(insights.skills)}")
+    print("Must-haves:")
+    for item in insights.must_haves:
+        print("  - " + item)
+    print("Nice-to-haves:")
+    for item in insights.nice_to_haves:
+        print("  - " + item)
+    print("Possible red flags:")
+    for item in insights.red_flags:
+        print("  - " + item)
 
 
 def main():
-    # sys.argv is the list of words typed after python3,
-    # e.g. ["jd_decoder.py", "samples/job.txt"]
     if len(sys.argv) < 2:
-        print("Usage: python3 jd_decoder.py JOB_FILE")
-        return  # stop here
+        print("Usage: python jd_decoder.py JOB_FILE [RESUME_FILE]")
+        return
 
-    with open(sys.argv[1]) as f:
-        job_text = f.read()
+    job_text = read(sys.argv[1])
+    insights = extract(job_text)  # the AI part: reads the job for meaning
+    print_insights(insights)
+    print()
 
-    skills = load_skills()
-    wanted = find_skills(job_text, skills)
+    # The AI's list replaces the fixed list in skills.json
+    wanted = insights.skills
 
-    print(f"This job asks for {len(wanted)} skills from your list:")
-    for skill in wanted:
-        print("  - " + skill)
-
-    # A second file name means a resume was given too
-    if len(sys.argv) > 2:
-        with open(sys.argv[2]) as f:
-            resume_text = f.read()
-
-        # Only check the skills this job asks for
-        have = find_skills(resume_text, wanted)
-        missing = []
-        for skill in wanted:
-            if skill not in have:
-                missing.append(skill)
-
-        # Share of the job's skills your resume mentions, as a whole number
-        if wanted:
-            score = round(len(have) / len(wanted) * 100)
-        else:
-            score = 0
-
-        print()
-        print(f"Match score: {score}% ({len(have)} of {len(wanted)} skills)")
+    if len(sys.argv) > 2:  # a resume was given: the rules part
+        resume_text = read(sys.argv[2])
+        # Plain rules check the resume for each skill the AI found
+        result = MatchResult(wanted=wanted, have=find_skills(resume_text, wanted))
+        # result.score() calls the score method of the MatchResult object
+        print(f"Match score: {result.score()}% ({len(result.have)} of {len(wanted)} skills)")
         print("Missing from your resume:")
-        for skill in missing:
-            print("  - " + skill)  
+        for skill in result.missing():
+            print("  - " + skill)
 
 
-# Run main() only when this file is run directly, not when it's imported
 if __name__ == "__main__":
     try:
         main()
     except FileNotFoundError as error:
-        # error.filename is the name of the file that couldn't be found
         print(f"Couldn't find the file {error.filename}. Check the name and try again.")
-
+    except ConnectionError:
+        print("Ollama isn't running. Open the Ollama app and try again.")
