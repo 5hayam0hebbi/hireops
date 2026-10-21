@@ -8,33 +8,46 @@ An SRE's toolkit for the job search: small, free, open-source tools that run on 
 
 Give it a job description and your resume. It tells you:
 
-- What the job really asks for: every skill it mentions (found by a local AI model, with no fixed keyword list), must-haves, nice-to-haves, seniority, years of experience and possible red flags
+- What the job really asks for: every skill it mentions (found by a local AI model, with no fixed keyword list), must-haves, nice-to-haves, seniority, years of experience, and red flags, each with the exact words from the posting that raise it
 - Your match score: the share of the job's skills your resume mentions (calculated by plain rules, so it is repeatable and explainable)
-- The skills the job asks for that your resume never mentions
-- Three suggested resume bullets that use only what your resume already says, with a warning if the AI adds a number that isn't in your resume
+- The skills the job asks for that your resume never mentions, and the resume lines that may show them in other words, for you to check
+- Suggested resume bullets that use only what your resume already says
+- Suggested edits to your resume for this job: lines to modify, keywords to add, lines to remove
+- A warning whenever the AI adds a number that isn't in your resume
 
 ### Example
 
     [paste the output of: python jd_decoder.py samples/job.txt -r samples/resume.md]
 
-### How to run it
+### Getting started (one time)
 
-1. Install [Ollama](https://ollama.com/download), then run `ollama pull llama3.2`
-2. `git clone https://github.com/<your-username>/hireops.git` and `cd hireops`
-3. `python3 -m venv .venv`, then `source .venv/bin/activate`, then `pip install -r requirements.txt`
-4. `python jd_decoder.py samples/job.txt --resume samples/resume.md`
+You need a Mac or Linux computer (on Windows, use WSL) with Python 3.10 or newer and [Ollama](https://ollama.com/download). Install Ollama and open it once, then:
+
+    git clone https://github.com/5hayam0hebbi/hireops.git
+    cd hireops
+    bash setup.sh
+
+`setup.sh` checks Python and Ollama, downloads the llama3.2 model (about 2 GB, the first time only), creates a `.venv`, installs everything in `requirements.txt` and runs the tests. It's safe to run again.
+
+### Every time
+
+    source .venv/bin/activate
+    python jd_decoder.py samples/job.txt --resume samples/resume.md
 
 Options: `--no-ai` (rules only, fast), `--json` (machine-readable output), `-h` (help). `skills.json` is your backup skills list, used with `--no-ai` or when Ollama isn't running.
 
 ### How the score works
 
-The local AI model reads the job and lists every skill it asks for. Plain rules then look for each of those skills in your resume as a whole word, in any letter case, including plurals and common aliases (for example "led a team" counts as Leadership). The score is the share of the job's skills that your resume mentions, so you can always see why. Skills the word check misses go back to the AI, which may count one only if it quotes the exact words from your resume that prove it, and the code checks the quote is really there. With `--no-ai`, the backup list in `skills.json` is used instead.
+The local AI model reads the job and lists every skill it asks for. Plain rules then look for each of those skills in your resume as a whole word, in any letter case, including plurals and common aliases (for example "led a team" counts as Leadership). For a skill of several words, every key word must be on the same resume line. The score is the share of the job's skills that your resume mentions, so you can always see why.
+
+Skills the word check misses go back to the AI, which points to the resume line that may show each one in other words. These matches are listed for you to check and never change the score, because a small model's judgment can be wrong. With `--no-ai`, the backup list in `skills.json` is used instead.
 
 ### What the AI does and doesn't do
 
-- It reads the job description, finds its skills and suggests resume bullets. It runs locally through Ollama.
-- It is told never to invent experience, and the code checks every suggested bullet for numbers that aren't in your resume.
-- Always read every suggested bullet before you use it.
+- It reads the job description, finds its skills and red flags, and suggests resume bullets and edits. It runs locally through Ollama (llama3.2 by default; set `HIREOPS_MODEL` to try another model).
+- It is told never to invent experience. The code drops any red flag whose quote isn't in the posting and any edit that points to a line your resume doesn't have, and it flags every number that isn't in your resume.
+- Every AI step has a time limit (`HIREOPS_TIMEOUT`, 180 seconds by default) and gets one retry, so a run never hangs.
+- Nothing changes your resume file. Always read every suggestion before you use it.
 
 ### Privacy
 
@@ -42,11 +55,12 @@ Your resume and job files never leave your computer. The samples in this repo ar
 
 ### Tests
 
-`pytest -v` runs [X] tests on the rule-based parts. GitHub Actions runs Ruff and the tests on every push.
+`pytest -v` runs 18 tests on the rule-based parts, with no AI needed. GitHub Actions runs Ruff and the tests on every push.
 
 ### Limitations
 
-- [one honest limitation you noticed, e.g. the model is slower on long postings]
-- [another, e.g. a skill written differently in your resume can show as missing]
+- A small local model can be slow (each AI step takes about 10 to 60 seconds on a laptop) and sometimes gives weak bullets; run it again or try a bigger model.
+- A skill written very differently in your resume can show as missing; check the "Possibly shown in other words" list.
+- For now you save the job posting as a text file; the web app will add job links and resume uploads.
 
 Next tool: Job Radar, new roles at your target companies every morning.
