@@ -46,3 +46,27 @@ if __name__ == "__main__":
     except FileNotFoundError as error:
         # error.filename is the name of the file that couldn't be found
         print(f"Couldn't find the file {error.filename}. Check the name and try again.")
+
+    # A second file name means a resume was given too
+    if len(sys.argv) > 2:
+        with open(sys.argv[2]) as f:
+            resume_text = f.read()
+
+        # Only check the skills this job asks for
+        have = find_skills(resume_text, wanted)
+        missing = []
+        for skill in wanted:
+            if skill not in have:
+                missing.append(skill)
+
+        # Share of the job's skills your resume mentions, as a whole number
+        if wanted:
+            score = round(len(have) / len(wanted) * 100)
+        else:
+            score = 0
+
+        print()
+        print(f"Match score: {score}% ({len(have)} of {len(wanted)} skills)")
+        print("Missing from your resume:")
+        for skill in missing:
+            print("  - " + skill)
