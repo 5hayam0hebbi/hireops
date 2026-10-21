@@ -86,9 +86,11 @@ def main():
     else:
         wanted = find_skills(job_text, load_skills())
 
-        if args.json and not args.resume:  # machine-readable output for other tools, then stop
-           print("--json needs --resume")
+    # --json without --resume can't work, so explain and stop
+    if args.json and not args.resume:
+        print("--json needs --resume")
         return
+    if args.json:  # machine-readable output for other tools, then stop
         result = MatchResult(wanted=wanted, have=find_skills(read(args.resume), wanted))
         data = {
             "job": args.job,
@@ -105,31 +107,39 @@ def main():
         print()
 
     if args.resume:
-        # Plain rules check the resume for each wanted skill
-        result = MatchResult(wanted=wanted, have=find_skills(read(args.resume), wanted))
-        print(
-            f"Match score: {result.score()}% ({len(result.have)} of {len(wanted)} skills)"
-        )
+        resume_text = read(args.resume)
+        # Plain rules check the resume for each wanted skill, word for word
+        result = MatchResult(wanted=wanted, have=find_skills(resume_text, wanted))
+        by_meaning = {}  # skills the AI proved with a quote: {skill: quote}
+        if insights:  # the AI is running, so check the missed skills for meaning
+            from evidence import find_by_meaning
+
+            by_meaning = find_by_meaning(result.missing(), resume_text)
+            # A dictionary's keys are its skills; add them to the ones you have
+            result.have += list(by_meaning)
+        print(f"Match score: {result.score()}% ({len(result.have)} of {len(wanted)} skills)")
         print("Missing from your resume:")
         for skill in result.missing():
             print("  - " + skill)
+        if by_meaning:
+            print("Found by meaning (proof from your resume):")
+            # .items() gives each skill together with its quote
+            for skill, quote in by_meaning.items():
+                print(f'  - {skill}: "{quote}"')
         # %% writes a real % sign in a log message
         logger.info("Match score %s%% for %s", result.score(), args.job)
         if not args.no_ai:
             from bullets import suggest_bullets, unsupported_numbers
 
-            resume_text = read(args.resume)
-        try:
-            print("\nSuggested resume bullets (check every word before using them):")
-            for bullet in suggest_bullets(job_text, resume_text):
-                print("  - " + bullet)
-                invented = unsupported_numbers(bullet, resume_text)
-                if invented:  # an empty set counts as False
-                    print(
-                        f"    WARNING: {', '.join(sorted(invented))} is not in your resume"
-                    )
-        except ConnectionError:
-            print("Ollama isn't running - no bullet suggestions this time.")
+            try:
+                print("\nSuggested resume bullets (check every word before using them):")
+                for bullet in suggest_bullets(job_text, resume_text):
+                    print("  - " + bullet)
+                    invented = unsupported_numbers(bullet, resume_text)
+                    if invented:  # an empty set counts as False
+                        print(f"    WARNING: {', '.join(sorted(invented))} is not in your resume")
+            except ConnectionError:
+                print("Ollama isn't running - no bullet suggestions this time.")
     else:
         print(f"Skills this job asks for: {', '.join(wanted)}")
 
