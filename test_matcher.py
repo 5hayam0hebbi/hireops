@@ -1,4 +1,5 @@
 # test_matcher.py - automatic checks for the parts of JD Decoder that use plain rules
+from bullets import unsupported_numbers
 from matcher import MatchResult, match, mentions
 
 
@@ -24,7 +25,9 @@ def test_alias_counts_as_the_skill():
 
 
 def test_score_and_missing():
-    result = MatchResult(wanted=["Python", "Azure", "Kubernetes", "Linux"], have=["Python", "Linux"])
+    result = MatchResult(
+        wanted=["Python", "Azure", "Kubernetes", "Linux"], have=["Python", "Linux"]
+    )
     assert result.score() == 50
     assert result.missing() == ["Azure", "Kubernetes"]
 
@@ -42,3 +45,15 @@ def test_sample_files():
     result = match(job_text, resume_text, ["Python", "Kubernetes", "Leadership"])
     assert result.have == ["Python", "Leadership"]
     assert result.missing() == ["Kubernetes"]
+
+
+def test_numbers_from_the_resume_are_fine():
+    assert (
+        unsupported_numbers("Led 25 engineers", "Led a team of 25 engineers") == set()
+    )
+
+
+def test_invented_number_is_caught():
+    assert unsupported_numbers(
+        "Cut costs by 40%", "Ran operations for online banking"
+    ) == {"40"}

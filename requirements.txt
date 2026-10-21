@@ -13,5 +13,6 @@ pydantic==2.14.1
 pydantic_core==2.50.1
 Pygments==2.21.0
 pytest==9.1.1
+ruff==0.17.1
 typing-inspection==0.4.4
 typing_extensions==4.16.0

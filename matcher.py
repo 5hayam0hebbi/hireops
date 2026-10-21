@@ -10,6 +10,7 @@ ALIASES = {
     "incident management": ["incident response"],
 }
 
+
 def skill_pattern(skill: str) -> str:
     """Build a pattern that matches the skill as a whole word."""
     # re.escape() makes characters like / . + match literally, so "CI/CD" is safe.
@@ -30,9 +31,11 @@ def mentions(text: str, skill: str) -> bool:
             return True
     return False
 
+
 def find_skills(text: str, skills: list[str]) -> list[str]:
     """Return the skills from the list that the text mentions."""
     return [skill for skill in skills if mentions(text, skill)]
+
 
 # @dataclass writes the boring parts of a class for you (like __init__),
 # so MatchResult(wanted=[...], have=[...]) just works.

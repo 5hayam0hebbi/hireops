@@ -51,7 +51,9 @@ def main():
     parser.add_argument("-r", "--resume", help="path to your resume (text or Markdown)")
     # store_true makes a flag: args.no_ai is True if you type --no-ai, else False
     parser.add_argument("--no-ai", action="store_true", help="rules only, skip the AI")
-    parser.add_argument("--json", action="store_true", help="print the match as JSON (needs --resume)")
+    parser.add_argument(
+        "--json", action="store_true", help="print the match as JSON (needs --resume)"
+    )
     args = parser.parse_args()
 
     # Send log messages at level INFO and above to hireops.log, with the time on each line
@@ -62,7 +64,9 @@ def main():
         format="%(asctime)s %(levelname)s %(message)s",
     )
     # Each %s is a slot that logging fills with the next value
-    logger.info("Decoding %s (resume: %s, AI: %s)", args.job, args.resume, not args.no_ai)
+    logger.info(
+        "Decoding %s (resume: %s, AI: %s)", args.job, args.resume, not args.no_ai
+    )
 
     job_text = read(args.job)
 
@@ -82,10 +86,9 @@ def main():
     else:
         wanted = find_skills(job_text, load_skills())
 
-        if args.json:  # machine-readable output for other tools, then stop
-         if not args.resume:
-            print("--json needs --resume")
-            return
+        if args.json and not args.resume:  # machine-readable output for other tools, then stop
+           print("--json needs --resume")
+        return
         result = MatchResult(wanted=wanted, have=find_skills(read(args.resume), wanted))
         data = {
             "job": args.job,
@@ -96,7 +99,7 @@ def main():
         # indent=2 puts each item on its own line, easy to read
         print(json.dumps(data, indent=2))
         return
-    
+
     if insights:
         print_insights(insights)
         print()
@@ -104,25 +107,29 @@ def main():
     if args.resume:
         # Plain rules check the resume for each wanted skill
         result = MatchResult(wanted=wanted, have=find_skills(read(args.resume), wanted))
-        print(f"Match score: {result.score()}% ({len(result.have)} of {len(wanted)} skills)")
+        print(
+            f"Match score: {result.score()}% ({len(result.have)} of {len(wanted)} skills)"
+        )
         print("Missing from your resume:")
         for skill in result.missing():
             print("  - " + skill)
         # %% writes a real % sign in a log message
         logger.info("Match score %s%% for %s", result.score(), args.job)
         if not args.no_ai:
-          from bullets import suggest_bullets, unsupported_numbers
+            from bullets import suggest_bullets, unsupported_numbers
 
-          resume_text = read(args.resume)
+            resume_text = read(args.resume)
         try:
-                print("\nSuggested resume bullets (check every word before using them):")
-                for bullet in suggest_bullets(job_text, resume_text):
-                    print("  - " + bullet)
-                    invented = unsupported_numbers(bullet, resume_text)
-                    if invented:  # an empty set counts as False
-                        print(f"    WARNING: {', '.join(sorted(invented))} is not in your resume")
+            print("\nSuggested resume bullets (check every word before using them):")
+            for bullet in suggest_bullets(job_text, resume_text):
+                print("  - " + bullet)
+                invented = unsupported_numbers(bullet, resume_text)
+                if invented:  # an empty set counts as False
+                    print(
+                        f"    WARNING: {', '.join(sorted(invented))} is not in your resume"
+                    )
         except ConnectionError:
-                print("Ollama isn't running - no bullet suggestions this time.")
+            print("Ollama isn't running - no bullet suggestions this time.")
     else:
         print(f"Skills this job asks for: {', '.join(wanted)}")
 

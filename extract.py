@@ -10,7 +10,9 @@ MODEL = "llama3.2"
 class JobInsights(BaseModel):
     role_title: str
     seniority: str  # junior, mid, senior, lead or executive
-    years_experience: int | None = None  # None (null in JSON) when the posting doesn't say
+    years_experience: int | None = (
+        None  # None (null in JSON) when the posting doesn't say
+    )
     skills: list[str]  # every skill the posting asks for, found by the AI
     must_haves: list[str]
     nice_to_haves: list[str]
