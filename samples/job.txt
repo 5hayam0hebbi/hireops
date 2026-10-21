@@ -1,0 +1,15 @@
+Senior Site Reliability Engineer - Northwind Bank (fictional sample)
+
+We are looking for a Senior SRE to keep our digital banking platform fast and reliable.
+
+What you'll do:
+- Run our services on Kubernetes in Azure, managed with Terraform
+- Build observability with Prometheus and Grafana
+- Lead incident management and improve our on-call process
+- Own disaster recovery testing for critical systems
+- Automate everything with Python and CI/CD pipelines
+- Help teams adopt LLM-based tools safely
+
+What you bring:
+- 10+ years in operations or SRE, including leadership of engineering teams
+- Strong Linux skills; Docker experience is a plus
