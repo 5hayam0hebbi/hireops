@@ -31,7 +31,7 @@
   ],
   "exclude": ["Intern", "Internship", "Co-op", "Junior", "Jr", "Sales", "Account Executive"],
   "titles": ["SRE", "Site Reliability", "Platform", "DevOps", "Infrastructure", "CI/CD", "Production Support", "Software Engineering", "Engineering Manager"],
-  "locations": ["Toronto", "Mississauga", "Ontario", "Canada", "Remote"]
+  "locations": ["Toronto", "Mississauga", "Ontario", "Canada", "North America", "Americas"]
 }
 
 

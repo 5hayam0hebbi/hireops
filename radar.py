@@ -68,8 +68,10 @@ def new_only(jobs, seen):
 
 
 def by_score(job):
-    """Used by sorted(): sort jobs by their score."""
-    return job["score"]
+    """Used by sorted(): by score, then by how many skills matched."""
+    # A tuple compares its first items, then the second ones if the first are equal,
+    # so 100% with 6 of 6 skills comes before 100% with 1 of 1
+    return (job["score"], len(job["have"]))
 
 
 def score_jobs(jobs, resume_text, skills):
@@ -78,6 +80,8 @@ def score_jobs(jobs, resume_text, skills):
         result = match(job["description"], resume_text, skills)
         # Add two new keys to this job's dictionary
         job["score"] = result.score()
+        job["have"] = result.have
+        job["wanted"] = result.wanted
         job["missing"] = result.missing()
     # key=by_score sorts by each job's score; reverse=True puts the highest first
     return sorted(jobs, key=by_score, reverse=True)
@@ -114,7 +118,8 @@ def main():
     matches = score_jobs(matches, resume_text, skills)
     for job in matches:
         # :>3 makes every score 3 characters wide, so the scores line up
-        print(f"\n{job['score']:>3}% | {job['company']} | {job['title']}")
+        found = f"{len(job['have'])} of {len(job['wanted'])} skills"
+        print(f"\n{job['score']:>3}% ({found}) | {job['company']} | {job['title']}")
         print(f"       {job['location']}")
         print(f"       {job['url']}")
 
