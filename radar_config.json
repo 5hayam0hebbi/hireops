@@ -1,0 +1,42 @@
+{
+  "companies": [
+    {"name": "Cloudflare", "board": "greenhouse", "slug": "cloudflare"},
+    {"name": "Datadog", "board": "greenhouse", "slug": "datadog"},
+    {"name": "GitLab", "board": "greenhouse", "slug": "gitlab"},
+    {"name": "CircleCI", "board": "greenhouse", "slug": "circleci"},
+    {"name": "Babylist", "board": "greenhouse", "slug": "babylist"},
+    {"name": "Upstart", "board": "greenhouse", "slug": "upstart"},
+    {"name": "Engine", "board": "greenhouse", "slug": "engine"},
+    {"name": "Northbeam", "board": "greenhouse", "slug": "northbeam"},
+    {"name": "StackAdapt", "board": "greenhouse", "slug": "stackadapt"},
+    {"name": "PagerDuty", "board": "greenhouse", "slug": "pagerduty"},
+    {"name": "Connor, Clark & Lunn", "board": "greenhouse", "slug": "cclfg"},
+    {"name": "Tubi Canada", "board": "greenhouse", "slug": "tubi-canada"},
+    {"name": "AutoTrader.ca", "board": "greenhouse", "slug": "autotradercanada"},
+    {"name": "Tenstorrent", "board": "greenhouse", "slug": "tenstorrent"},
+    {"name": "Gore Mutual Insurance", "board": "greenhouse", "slug": "goremutualinsurance"},
+    {"name": "Zafin", "board": "greenhouse", "slug": "zafinlabsamericasinc"},
+    {"name": "EQ Bank", "board": "lever", "slug": "eqbank"},
+    {"name": "Maple", "board": "lever", "slug": "getmaple"},
+    {"name": "PointClickCare", "board": "lever", "slug": "pointclickcare"},
+    {"name": "Caseware", "board": "lever", "slug": "caseware"},
+    {"name": "Veeva Systems", "board": "lever", "slug": "veeva"},
+    {"name": "Magnet Forensics", "board": "lever", "slug": "magnetforensics"},
+    {"name": "Wattpad", "board": "lever", "slug": "wattpad"},
+    {"name": "ShyftLabs", "board": "lever", "slug": "shyftlabs"},
+    {"name": "Shakudo", "board": "lever", "slug": "shakudo"},
+    {"name": "Kepler Communications", "board": "lever", "slug": "kepler"},
+    {"name": "Smile Digital Health", "board": "lever", "slug": "smiledigitalhealth"},
+    {"name": "Palantir", "board": "lever", "slug": "palantir"}
+  ],
+  "exclude": ["Intern", "Internship", "Co-op", "Junior", "Jr", "Sales", "Account Executive"],
+  "titles": ["SRE", "Site Reliability", "Platform", "DevOps", "Infrastructure", "CI/CD", "Production Support", "Software Engineering", "Engineering Manager"],
+  "locations": ["Toronto", "Mississauga", "Ontario", "Canada", "Remote"]
+}
+
+
+
+
+
+
+
