@@ -1,5 +1,5 @@
 # test_radar.py - checks for Job Radar that never touch the internet
-from boards import clean, from_greenhouse
+from boards import clean, from_greenhouse, from_lever
 from radar import is_match, new_only, score_jobs
 
 # A made-up Greenhouse job, in the same shape the real API sends
@@ -58,3 +58,23 @@ def test_best_match_first():
     ranked = score_jobs(jobs, "I write Python", ["Python", "Azure"])
     assert [j["id"] for j in ranked] == ["2", "1"]
     assert ranked[0]["score"] == 100
+
+
+LEVER_JOB = {
+    "id": "abc",
+    "text": "Platform Engineer",
+    "categories": {"location": "Remote"},
+    "hostedUrl": "https://example.com/abc",
+    "descriptionPlain": "Python and Docker",
+}
+
+
+def test_from_lever():
+    result = from_lever("Example Fintech", LEVER_JOB)
+    assert result["id"] == "lever-abc"
+    assert result["title"] == "Platform Engineer"
+    assert result["description"] == "Python and Docker"
+
+
+def test_excluded_word_blocks_a_match():
+    assert not is_match(job("Junior Platform Engineer"), TITLES, LOCATIONS, ["Junior"])
