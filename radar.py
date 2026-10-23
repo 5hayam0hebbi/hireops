@@ -2,6 +2,8 @@
 import argparse
 import json
 import logging
+import time
+from pathlib import Path
 
 import requests
 
@@ -87,6 +89,32 @@ def score_jobs(jobs, resume_text, skills):
     return sorted(jobs, key=by_score, reverse=True)
 
 
+def write_digest(jobs, folder="digests"):
+    """Save the results as a Markdown table, for example digests/2026-10-23.md."""
+    # Today's date as text: %Y is the year, %m the month, %d the day
+    today = time.strftime("%Y-%m-%d")
+    # Make the folder; exist_ok=True means no complaint if it's already there
+    Path(folder).mkdir(exist_ok=True)
+    # The / joins the folder and the file name into one path
+    path = Path(folder) / f"{today}.md"
+    lines = [
+        f"# Job Radar - {today}",
+        "",
+        f"{len(jobs)} new matching roles, best match first.",
+        "",
+        "| Match | Company | Role | Location |",
+        "|---|---|---|---|",
+    ]
+    for job in jobs:
+        # A Markdown link looks like [text](address)
+        link = f"[{job['title']}]({job['url']})"
+        row = f"| {job['score']}% | {job['company']} | {link} | {job['location']} |"
+        lines.append(row)
+    # Join the lines with line breaks and write them all to the file
+    path.write_text("\n".join(lines) + "\n")
+    return path
+
+
 def main():
     parser = argparse.ArgumentParser(description="New roles at your target companies.")
     parser.add_argument("-r", "--resume", default="samples/resume.md", help="resume")
@@ -122,7 +150,13 @@ def main():
         print(f"\n{job['score']:>3}% ({found}) | {job['company']} | {job['title']}")
         print(f"       {job['location']}")
         print(f"       {job['url']}")
+        if job["missing"]:
+            # [:3] keeps the first three; join glues them together with commas
+            print(f"       Missing: {', '.join(job['missing'][:3])}")
 
+    if matches:
+        path = write_digest(matches)
+    print(f"\nSaved {path}")
     # Remember everything reported today, so tomorrow shows only new roles
     seen.update(job["id"] for job in matches)
     save_seen(seen)
