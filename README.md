@@ -63,4 +63,15 @@ Your resume and job files never leave your computer. The samples in this repo ar
 - A skill written very differently in your resume can show as missing; check the "Possibly shown in other words" list.
 - For now you save the job posting as a text file; the web app will add job links and resume uploads.
 
-Next tool: Job Radar, new roles at your target companies every morning.
+## Tool 2: Job Radar (in progress, ships Oct 29)
+
+Checks the public job boards of the companies you choose (Greenhouse and Lever, which need no login), keeps only the roles that match your titles and places, scores each one against your resume with JD Decoder's rules, and shows only roles that are new since the last run.
+
+    python radar.py --resume private/resume.md
+
+- Edit `radar_config.json`: your companies (`board` is `greenhouse` or `lever`; `slug` is the company's name in the board's web address), the titles and places you want, and words to exclude.
+- `--all` shows every match, not only new ones.
+- Each run saves a Markdown digest in `digests/`. Your digests, `seen.json` and resume stay on your computer (they're in `.gitignore`).
+- Many banks use Workday career sites, which have no public API. For those, use the bank's own email job alerts. Job Radar never scrapes websites or LinkedIn.
+
+Coming next: the HireOps web app. Paste a job link or the job text, upload your resume (PDF, Word or text), and click Decode, all on your own laptop.
