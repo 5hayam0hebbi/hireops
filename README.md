@@ -65,13 +65,25 @@ Your resume and job files never leave your computer. The samples in this repo ar
 
 ## Tool 2: Job Radar (in progress, ships Oct 29)
 
-Checks the public job boards of the companies you choose (Greenhouse and Lever, which need no login), keeps only the roles that match your titles and places, scores each one against your resume with JD Decoder's rules, and shows only roles that are new since the last run.
+Checks the public job boards of the companies you choose (Greenhouse, Lever and Ashby, which need no login), keeps only the roles that match your titles and places, scores each one against your resume with JD Decoder's rules, and shows only roles that are new since the last run.
 
     python radar.py --resume private/resume.md
 
-- Edit `radar_config.json`: your companies (`board` is `greenhouse` or `lever`; `slug` is the company's name in the board's web address), the titles and places you want, and words to exclude.
+- Edit `radar_config.json`: your companies (`board` is `greenhouse`, `lever` or `ashby`; `slug` is the company's name in the board's web address), the titles and places you want, and words to exclude.
 - `--all` shows every match, not only new ones.
 - Each run saves a Markdown digest in `digests/`. Your digests, `seen.json` and resume stay on your computer (they're in `.gitignore`).
 - Many banks use Workday career sites, which have no public API. For those, use the bank's own email job alerts. Job Radar never scrapes websites or LinkedIn.
 
 Coming next: the HireOps web app. Paste a job link or the job text, upload your resume (PDF, Word or text), and click Decode, all on your own laptop.
+
+## Run it in Docker
+
+    docker compose up -d ollama
+    docker compose exec ollama ollama pull llama3.2
+    docker compose run --rm --build hireops samples/job.txt --resume samples/resume.md
+
+Every push to main builds the image and publishes it to `ghcr.io/5hayam0hebbi/hireops`.
+
+## Deploy to Azure with Terraform
+
+`infra/` deploys the image to Azure Container Apps as an on-demand job (rules-only mode). See `infra/terraform.tfvars.example`, then `terraform init && terraform apply`. `terraform destroy` removes everything.
