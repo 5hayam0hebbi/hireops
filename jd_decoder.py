@@ -79,7 +79,15 @@ def main():
     parser.add_argument(
         "--json", action="store_true", help="print the match as JSON (needs --resume)"
     )
+    # For cloud logs: the whole report on ONE line, so Azure keeps it in one piece
+    parser.add_argument(
+        "--one-line",
+        action="store_true",
+        help="print the match as JSON on a single line (needs --resume)",
+    )
     args = parser.parse_args()
+    if args.one_line:
+        args.json = True  # --one-line is JSON output, just squeezed onto one line
 
     # Send log messages at level INFO and above to hireops.log, with the time on each line
     logging.basicConfig(
@@ -126,11 +134,17 @@ def main():
         data = {
             "job": args.job,
             "score": result.score(),
+            "skills_found": len(result.have),
+            "skills_wanted": len(wanted),
             "have": result.have,
             "missing": result.missing(),
         }
-        # indent=2 puts each item on its own line, easy to read
-        print(json.dumps(data, indent=2))
+        if args.one_line:
+            # No indent = everything on one line: one run becomes one log entry
+            print(json.dumps(data), flush=True)
+        else:
+            # indent=2 puts each item on its own line, easy to read
+            print(json.dumps(data, indent=2))
         return
 
     if insights:
