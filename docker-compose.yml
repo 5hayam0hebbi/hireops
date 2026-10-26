@@ -1,0 +1,21 @@
+# Runs HireOps and the Ollama model server side by side.
+#   docker compose up -d ollama                       # start the model server
+#   docker compose exec ollama ollama pull llama3.2   # download the model once (about 2 GB)
+#   docker compose run --rm hireops samples/job.txt --resume samples/resume.md
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama   # keeps the downloaded model between runs
+    ports: ["11434:11434"]
+
+  hireops:
+    build: .
+    environment:
+      OLLAMA_HOST: http://ollama:11434  # the Ollama library reads this to find the server
+    volumes:
+      - ./private:/app/private          # your real resume and jobs stay on your laptop
+    depends_on: [ollama]
+
+volumes:
+  ollama-models:
