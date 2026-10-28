@@ -19,3 +19,9 @@ def test_decode_with_rules_only():
     assert not page.exception
     shown = " ".join(item.value for item in page.markdown)
     assert "Kubernetes" in shown and "rules only" in shown
+
+def test_linkedin_link_asks_you_to_paste():
+    page = AppTest.from_file("pages/1_JD_Decoder.py").run(timeout=WAIT)
+    page.text_input[0].input("https://www.linkedin.com/jobs/view/4000000001/")
+    page.button[0].click().run(timeout=WAIT)
+    assert "paste it into the box" in page.info[0].value

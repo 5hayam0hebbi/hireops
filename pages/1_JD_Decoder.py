@@ -1,9 +1,29 @@
 # pages/1_JD_Decoder.py - the JD Decoder page of the HireOps web app
+import requests
 import streamlit as st
 
 from decoder import decode
+from links import UnsupportedLink, job_from_link
 from resume_files import KINDS, read_resume
 
+
+def get_job_text(link, pasted):
+    """The job's text: the pasted text if there is any, otherwise read from the link."""
+    if pasted.strip():  # the text box always works, so it wins
+        return pasted.strip()
+    if not link.strip():
+        return ""
+    try:
+        job = job_from_link(link)
+    except UnsupportedLink as error:  # LinkedIn, Workday and other sites
+        st.info(str(error))
+        return ""
+    # LookupError: an Ashby job that has closed (see fetch_ashby_job in boards.py)
+    except (requests.RequestException, LookupError):  # no internet, closed job, typo
+        st.warning("Couldn't read that link right now. Paste the job text instead.")
+        return ""
+    st.success(f'Read "{job["title"]}" from the {job["company"]} job board.')
+    return job["description"]
 
 def get_resume_text(upload):
     """The resume's text, read on this computer. "" if there's no file or no text."""
@@ -74,7 +94,10 @@ st.caption(
     "Add a job and your resume, then click Decode. Everything stays on this computer."
 )
 
-pasted = st.text_area("Paste the job text", height=200)
+link = st.text_input(
+    "Job link (Greenhouse or Lever)", placeholder="https://job-boards.greenhouse.io/..."
+)
+pasted = st.text_area("Or paste the job text (works for any site)", height=200)
 upload = st.file_uploader("Your resume (PDF, Word, .txt or .md)", type=KINDS)
 use_ai = st.toggle(
     "Use the AI (Ollama)", value=True, help="Off = rules only: fast, no AI"
@@ -82,10 +105,10 @@ use_ai = st.toggle(
 
 # st.button returns True only on the run right after you click it
 if st.button("Decode", type="primary"):
-    job_text = pasted.strip()  # .strip() removes spaces and blank lines at both ends
+    job_text = get_job_text(link, pasted)  # .strip() removes spaces and blank lines at both ends
     resume_text = get_resume_text(upload)
     if not job_text:
-        st.warning("Paste the job text first.")
+        st.warning("Add a job first: paste its text, or a Greenhouse or Lever link.")
     else:
         # st.status shows a box that fills with the progress lines while the AI works
         with st.status("Decoding...", expanded=True) as box:
