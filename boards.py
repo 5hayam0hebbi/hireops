@@ -39,6 +39,18 @@ def fetch_greenhouse(company, slug):
     return [from_greenhouse(company, job) for job in response.json()["jobs"]]
 
 
+def lever_text(job):
+    """All of a Lever job's text: the description, each list (like Requirements), the rest."""
+    parts = [job.get("descriptionPlain") or ""]
+    # .get("lists", []) gives [] when the job has no lists
+    for section in job.get("lists", []):
+        parts.append(section.get("text", ""))  # the list's heading
+        parts.append(clean(section.get("content")))  # its items, as plain text
+    parts.append(job.get("additionalPlain") or "")
+    # Join the non-empty parts with a space between them
+    return clean(" ".join(part for part in parts if part))
+
+
 def from_lever(company, job):
     """Turn one Lever job into the same standard shape."""
     return {
@@ -48,7 +60,7 @@ def from_lever(company, job):
         # .get(key, "") gives "" if this job has no location
         "location": job["categories"].get("location", ""),
         "url": job["hostedUrl"],
-        "description": clean(job.get("descriptionPlain")),
+        "description": lever_text(job),
     }
 
 
@@ -93,6 +105,39 @@ def fetch_ashby(company, slug):
     jobs = response.json()["jobs"]
     # isListed False means a hidden posting; .get(..., True) keeps jobs without the flag
     return [from_ashby(company, job) for job in jobs if job.get("isListed", True)]
+
+
+def fetch_greenhouse_job(slug, job_id):
+    """One job from a Greenhouse board, by its number."""
+    url = f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs/{job_id}"
+    response = requests.get(url, timeout=TIMEOUT)
+    response.raise_for_status()
+    # The company's name isn't in the answer, so use the slug for now
+    return from_greenhouse(slug, response.json())
+
+
+def fetch_lever_job(slug, job_id):
+    """One job from a Lever board, by its ID."""
+    url = f"https://api.lever.co/v0/postings/{slug}/{job_id}"
+    response = requests.get(url, timeout=TIMEOUT)
+    response.raise_for_status()
+    return from_lever(slug, response.json())
+
+
+def fetch_ashby_job(slug, job_id):
+    """One job from an Ashby board, by its ID.
+
+    Ashby's public API has no address for a single job (asking for one answers 401),
+    so read the company's whole board and pick the job whose ID matches.
+    """
+    url = f"https://api.ashbyhq.com/posting-api/job-board/{slug}"
+    response = requests.get(url, timeout=TIMEOUT)
+    response.raise_for_status()
+    for job in response.json()["jobs"]:
+        if job["id"] == job_id:
+            return from_ashby(slug, job)
+    # No match: the job closed, or the link has a typo
+    raise LookupError(f"Job {job_id} isn't open on {slug}'s Ashby board any more.")
 
 
 if __name__ == "__main__":

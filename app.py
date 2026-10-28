@@ -21,5 +21,6 @@ st.subheader("Your privacy")
 st.write(
     "Your resume is read on this computer and never uploaded anywhere. "
     "The AI model runs on this computer too (Ollama). "
-    "Job links are read only through Greenhouse's and Lever's public job-board APIs."
+    "Job links are read only through the public job-board APIs of Greenhouse, Lever "
+    "and Ashby."
 )
