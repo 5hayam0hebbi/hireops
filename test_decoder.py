@@ -1,6 +1,6 @@
 # test_decoder.py - checks for decoder.py, with a FAKE AI (tests never call Ollama)
 import decoder
-from extract import JobInsights
+from extract import JobInsights, Requirement
 
 JOB = "We need Python, Kubernetes and Terraform. Strong incident management."
 RESUME = "- Wrote Python automation\n- Ran incident management for 300 apps"
@@ -11,9 +11,11 @@ def fake_insights(job_text):
     return JobInsights(
         role_title="SRE",
         seniority="senior",
-        skills=["Python", "Kubernetes", "Terraform"],
-        must_haves=[],
-        nice_to_haves=[],
+        requirements=[
+            Requirement(name="Python", importance="must-have"),
+            Requirement(name="Kubernetes", importance="must-have"),
+            Requirement(name="Terraform", importance="nice-to-have"),
+        ],
         red_flags=[],
     )
 

@@ -4,6 +4,7 @@ import re
 from pydantic import BaseModel, Field
 
 from ai import ask  # one place that talks to the model, with a time limit
+from matcher import mentions
 
 
 class Bullets(BaseModel):
@@ -17,6 +18,9 @@ Each bullet is ONE achievement sentence of 12 to 30 words. Start it with an acti
 Never return a job title, a heading, a company name or a date on its own.
 Use ONLY experience that is stated in the resume.
 Never invent employers, tools, numbers or achievements.
+Base each bullet on ONE resume line: keep its numbers with the work they describe,
+and never move a number from one line to another line's achievement.
+Never upgrade what was done (for example "fixed" must not become "automated").
 Use the job's wording where the resume truly supports it.
 
 Job description:
@@ -37,6 +41,71 @@ def unsupported_numbers(bullet: str, resume_text: str) -> set[str]:
     """Numbers in a bullet that never appear in the resume: a sign of invention."""
     # For sets, a - b means "items in a that are not in b"
     return numbers_in(bullet) - numbers_in(resume_text)
+
+
+# Small words that don't tell you what a line is about
+STOP_WORDS = {
+    "a", "an", "and", "the", "of", "to", "in", "on", "for", "with", "by", "from",
+    "at", "as", "into", "across", "that", "this", "it", "its", "is", "was", "were",
+    "be", "or", "our", "their", "all", "every", "each", "per", "over", "than",
+}
+
+# Claims a rewrite must not add. If a bullet says "automated" but the resume line it
+# came from never does, the AI has upgraded what you did. Keys are word starts.
+CLAIM_WORDS = {
+    "automat": "automated",
+    "architect": "architected",
+    "design": "designed",
+}
+
+
+def metrics_in(text: str) -> set[str]:
+    """Numbers that are amounts (35, 99.9, 200), not labels like the 2 in "P2"."""
+    # (?<![A-Za-z]) = "not right after a letter"; (?:\.\d+)? = an optional decimal part
+    return set(re.findall(r"(?<![A-Za-z\d.])\d+(?:\.\d+)?", text))
+
+
+def content_words(text: str) -> set[str]:
+    """The meaningful words in a text, lowercased (no small words, no numbers)."""
+    words = re.findall(r"[a-z][a-z0-9+#/-]*", text.lower())
+    return {w for w in words if w not in STOP_WORDS and len(w) > 2}
+
+
+def source_line(bullet: str, resume_text: str) -> str:
+    """The resume line the bullet most likely came from (the most shared words)."""
+    lines = [line.strip(" -•*") for line in resume_text.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    words = content_words(bullet)
+    # max(..., key=...) picks the line with the most words in common with the bullet
+    return max(lines, key=lambda line: len(words & content_words(line)))
+
+
+def bullet_warnings(bullet: str, resume_text: str, gaps: list[str]) -> list[str]:
+    """Plain-English problems with a suggested bullet. An empty list = no problems found.
+
+    1. Numbers from another line: every number must be on the bullet's source line,
+       so "90%" (self-healing) can't be glued to "35%" (runbooks).
+    2. Upgraded claims: "automated" only if the source line says so.
+    3. Real gaps: a bullet must not name a skill your resume doesn't show.
+    """
+    warnings = []
+    line = source_line(bullet, resume_text)
+    resume_numbers = metrics_in(resume_text)
+    for number in sorted(metrics_in(bullet)):
+        # Numbers not in the resume at all are reported by unsupported_numbers()
+        if number in resume_numbers and number not in metrics_in(line):
+            warnings.append(
+                f"{number} comes from a different resume line, not the one this bullet is about"
+            )
+    bullet_low, line_low = bullet.lower(), line.lower()
+    for start, word in CLAIM_WORDS.items():
+        if start in bullet_low and start not in line_low:
+            warnings.append(f'says "{word}", but your resume line doesn\'t')
+    for skill in gaps:
+        if mentions(bullet, skill):
+            warnings.append(f"names {skill}, which your resume doesn't show")
+    return warnings
 
 
 def looks_like_bullet(bullet: str, resume_text: str) -> bool:

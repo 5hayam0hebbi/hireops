@@ -35,6 +35,8 @@ def print_insights(insights):
     print("Nice-to-haves:")
     for item in insights.nice_to_haves:
         print("  - " + item)
+    if insights.not_required:  # the posting says you don't need these
+        print(f"Named but not required (not scored): {', '.join(insights.not_required)}")
     print("Possible red flags (with the words from the posting):")
     if not insights.red_flags:
         print("  none found")
@@ -48,6 +50,14 @@ def print_match(decoded):
     print(
         f"Match score: {result.score()}% ({len(result.have)} of {len(decoded.wanted)} skills)"
     )
+    parts = decoded.breakdown()
+    if parts:  # only with the AI: it labels must-haves and nice-to-haves
+        (must_have, must_all), (nice_have, nice_all) = parts["must"], parts["nice"]
+        print(
+            f"Must-haves shown: {must_have} of {must_all} · "
+            f"nice-to-haves shown: {nice_have} of {nice_all} · "
+            f"weighted score: {decoded.weighted_score()}%"
+        )
     print("Missing from your resume:")
     for skill in result.missing():
         print("  - " + skill)
@@ -59,6 +69,10 @@ def print_match(decoded):
         print(
             f"If all of these are right, your score would be {decoded.best_score()}%."
         )
+    if decoded.gaps():
+        print("Real gaps (no proof in your resume; cover in a letter or interview):")
+        for skill in decoded.gaps():
+            print("  - " + skill)
     if decoded.used_ai:
         print("\nSuggested resume bullets (check every word before using them):")
         if not decoded.bullets:
@@ -69,6 +83,8 @@ def print_match(decoded):
                 print(
                     f"    WARNING: {', '.join(bullet.invented)} is not in your resume"
                 )
+            for warning in bullet.warnings:
+                print(f"    WARNING: {warning}")
 
 
 def print_edits(edits):

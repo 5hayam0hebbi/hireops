@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass, field
 
 from ai import MODEL, AIError
-from bullets import suggest_bullets, unsupported_numbers
+from bullets import bullet_warnings, suggest_bullets, unsupported_numbers
 from evidence import find_by_meaning
 from extract import JobInsights, extract
 from matcher import MatchResult, find_skills
@@ -15,11 +15,13 @@ def load_skills(path="skills.json"):
         return json.load(f)
 
 
-# One suggested bullet, plus any numbers in it that your resume never mentions
+# One suggested bullet, plus any numbers in it that your resume never mentions,
+# and plain-English warnings (numbers from another line, upgraded claims, gaps)
 @dataclass
 class Bullet:
     text: str
     invented: list[str]
+    warnings: list[str] = field(default_factory=list)
 
 
 # Everything one decode found. field(default_factory=list) gives each result its
@@ -33,6 +35,42 @@ class Decoded:
     bullets: list[Bullet] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)  # messages for you, e.g. AI is off
     used_ai: bool = False
+
+    def gaps(self) -> list[str]:
+        """Skills the job wants with NO proof at all: not word for word, not by meaning.
+
+        These are real gaps. Don't write bullets for them; cover them in a cover
+        letter or interview, or close them by building something.
+        """
+        if not self.result:
+            return []
+        return [s for s in self.result.missing() if s not in self.by_meaning]
+
+    def breakdown(self) -> dict:
+        """How many must-haves and nice-to-haves your resume shows (incl. by meaning).
+
+        For example {"must": (3, 5), "nice": (1, 2), "not_required": 6}.
+        """
+        if not self.insights or not self.result:
+            return {}
+        shown = set(self.result.have) | set(self.by_meaning)
+        must, nice = self.insights.must_haves, self.insights.nice_to_haves
+        return {
+            "must": (len([s for s in must if s in shown]), len(must)),
+            "nice": (len([s for s in nice if s in shown]), len(nice)),
+            "not_required": len(self.insights.not_required),
+        }
+
+    def weighted_score(self) -> int:
+        """Like best_score, but a must-have counts twice as much as a nice-to-have."""
+        parts = self.breakdown()
+        if not parts:
+            return self.best_score()
+        (must_have, must_all), (nice_have, nice_all) = parts["must"], parts["nice"]
+        total = 2 * must_all + nice_all
+        if not total:
+            return 0
+        return round((2 * must_have + nice_have) / total * 100)
 
     def best_score(self) -> int:
         """The score you'd have if every 'found by meaning' match is right."""
@@ -91,9 +129,11 @@ def decode(job_text, resume_text="", use_ai=True, progress=say_nothing):
     # Step 3: the AI suggests bullets; the code flags numbers it may have invented
     progress(f"3/3 {MODEL} is writing resume bullets...")
     try:
+        gaps = decoded.gaps()
         for text in suggest_bullets(job_text, resume_text):
             invented = sorted(unsupported_numbers(text, resume_text))
-            decoded.bullets.append(Bullet(text=text, invented=invented))
+            warnings = bullet_warnings(text, resume_text, gaps)
+            decoded.bullets.append(Bullet(text, invented, warnings))
     except (ConnectionError, AIError) as error:
         decoded.notes.append(f"No bullet suggestions this time: {error}")
     return decoded

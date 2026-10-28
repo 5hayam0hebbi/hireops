@@ -53,6 +53,10 @@ def show(decoded):
             st.write(f"Experience asked for: {insights.years_experience}+ years")
     label = "Skills the AI found" if decoded.used_ai else "Skills found (rules only)"
     st.write(f"**{label} ({len(decoded.wanted)}):** {', '.join(decoded.wanted)}")
+    if insights and insights.not_required:
+        st.caption(
+            "Named but not required (not scored): " + ", ".join(insights.not_required)
+        )
 
     result = decoded.result
     if result is None:
@@ -66,8 +70,21 @@ def show(decoded):
         help="Skills your resume names word for word",
     )
     right.metric("If the meaning matches are right", f"{decoded.best_score()}%")
+    parts = decoded.breakdown()
+    if parts:  # only with the AI: it labels must-haves and nice-to-haves
+        (must_have, must_all), (nice_have, nice_all) = parts["must"], parts["nice"]
+        st.write(
+            f"**Must-haves shown:** {must_have} of {must_all} · "
+            f"**nice-to-haves:** {nice_have} of {nice_all} · "
+            f"**weighted score:** {decoded.weighted_score()}%"
+        )
     missing = result.missing()
     st.write(f"**Missing from your resume:** {', '.join(missing) or 'nothing'}")
+    if decoded.gaps():
+        st.write(
+            "**Real gaps** (no proof in your resume; cover them in a cover letter "
+            "or interview, not a bullet): " + ", ".join(decoded.gaps())
+        )
 
     if decoded.by_meaning:
         st.write("**Possibly shown in other words** (check each line yourself):")
@@ -83,6 +100,8 @@ def show(decoded):
             st.markdown(f"- {bullet.text}")
             if bullet.invented:
                 st.warning(f"{', '.join(bullet.invented)} is not in your resume")
+            for warning in bullet.warnings:
+                st.warning(warning)
     if insights and insights.red_flags:
         st.write("**Possible red flags** (with the words from the posting):")
         for flag in insights.red_flags:
