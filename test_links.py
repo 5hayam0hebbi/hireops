@@ -95,3 +95,8 @@ def test_ashby_closed_job(monkeypatch):
     )
     with pytest.raises(LookupError):
         job_from_link(f"https://jobs.ashbyhq.com/wealthsimple/{ASHBY_ID}")
+
+
+def test_greenhouse_embed_link():
+    url = "https://job-boards.greenhouse.io/embed/job_app?for=northwind&token=4012345"
+    assert parse_link(url) == ("greenhouse", "northwind", "4012345")

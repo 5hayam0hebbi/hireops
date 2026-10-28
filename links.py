@@ -8,6 +8,11 @@ from boards import fetch_ashby_job, fetch_greenhouse_job, fetch_lever_job
 GREENHOUSE = re.compile(
     r"https?://(?:job-)?boards\.greenhouse\.io/(?P<slug>[\w-]+)/jobs/(?P<id>\d+)"
 )
+# An "embed" link: job-boards.greenhouse.io/embed/job_app?for=<slug>&token=<number>
+GREENHOUSE_EMBED = re.compile(
+    r"https?://(?:job-)?boards\.greenhouse\.io/embed/job_app"
+    r"\?for=(?P<slug>[\w-]+)&token=(?P<id>\d+)"
+)
 # jobs.lever.co/<slug>/<id>, where the ID looks like 8f2c1a3e-1b2c-4d5e-9f00-1234567890ab
 LEVER = re.compile(r"https?://jobs\.lever\.co/(?P<slug>[\w.-]+)/(?P<id>[0-9a-f-]{36})")
 # jobs.ashbyhq.com/<slug>/<id>, the same kind of 36-character ID as Lever;
@@ -32,6 +37,7 @@ def parse_link(url):
     url = url.strip()
     for board, pattern in (
         ("greenhouse", GREENHOUSE),
+        ("greenhouse", GREENHOUSE_EMBED),
         ("lever", LEVER),
         ("ashby", ASHBY),
     ):
