@@ -62,6 +62,11 @@ years_experience: the minimum years of experience asked for, or null if not stat
 requirements: everything a candidate is judged on. Include technical skills AND
 leadership, people and experience requirements (for example "hiring", "coaching
 engineers", "hands-on coding", "stakeholder communication", "led platform teams").
+Be specific: name the actual thing, never an umbrella like "technical skills",
+"leadership experience" or "soft skills". "Don't apply if you don't enjoy coding"
+means "hands-on coding" is a must-have.
+If the posting lists its tools but says experience in them is not needed, still list
+each tool, as "not required".
 Give each a short name of 1 to 4 words and an importance:
   "must-have" = the posting requires it or lists it under what you need to bring,
   "nice-to-have" = described as a plus, preferred or bonus,
@@ -89,6 +94,19 @@ NOT_NEEDED = [
     "do not need",
     "don't worry if you don't know",
 ]
+
+# Umbrella words. A requirement made ONLY of these ("Technical Skills", "Leadership
+# Experience") matches almost any resume, so it would fake a high score: we drop it.
+VAGUE_WORDS = {
+    "technical", "skills", "skill", "leadership", "experience", "soft", "general",
+    "relevant", "professional", "communication", "strong", "good", "excellent",
+}
+
+
+def is_vague(name: str) -> bool:
+    """True if every word of the name is an umbrella word."""
+    words = re.findall(r"[a-z]+", name.lower())
+    return bool(words) and all(word in VAGUE_WORDS for word in words)
 
 
 def normalize(text: str) -> str:
@@ -122,17 +140,24 @@ def said_not_needed(name: str, job_text: str) -> bool:
 
 
 def apply_text_rules(requirements: list[Requirement], job_text: str) -> list[Requirement]:
-    """Fix the AI's labels with rules: 'not required' wording wins; repeats go."""
+    """Fix the AI's labels with rules, because the posting's own words beat a guess.
+
+    - Umbrella names ("Technical Skills") and repeats are dropped.
+    - "not required" only when the posting says so next to the skill; otherwise
+      the AI guessed, so it goes back to "must-have" (safer to check than to skip).
+    """
     seen = set()
     fixed = []
     for req in requirements:
         key = req.name.strip().lower()
-        if not key or key in seen:
+        if not key or key in seen or is_vague(req.name):
             continue
         seen.add(key)
         importance = req.importance
         if said_not_needed(req.name, job_text):
             importance = "not required"
+        elif importance == "not required":
+            importance = "must-have"
         fixed.append(Requirement(name=req.name.strip(), importance=importance))
     return fixed
 

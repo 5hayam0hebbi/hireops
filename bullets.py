@@ -22,7 +22,7 @@ Base each bullet on ONE resume line: keep its numbers with the work they describ
 and never move a number from one line to another line's achievement.
 Never upgrade what was done (for example "fixed" must not become "automated").
 Use the job's wording where the resume truly supports it.
-
+{focus}
 Job description:
 {job}
 
@@ -99,9 +99,11 @@ def bullet_warnings(bullet: str, resume_text: str, gaps: list[str]) -> list[str]
                 f"{number} comes from a different resume line, not the one this bullet is about"
             )
     bullet_low, line_low = bullet.lower(), line.lower()
-    for start, word in CLAIM_WORDS.items():
-        if start in bullet_low and start not in line_low:
-            warnings.append(f'says "{word}", but your resume line doesn\'t')
+    for start in CLAIM_WORDS:
+        # \w* = the rest of the word, so "automat" finds "automation" or "automated"
+        found = re.search(r"\b" + start + r"\w*", bullet_low)
+        if found and start not in line_low:
+            warnings.append(f'says "{found.group()}", but your resume line doesn\'t')
     for skill in gaps:
         if mentions(bullet, skill):
             warnings.append(f"names {skill}, which your resume doesn't show")
@@ -115,9 +117,21 @@ def looks_like_bullet(bullet: str, resume_text: str) -> bool:
     return len(bullet.split()) >= 8 and not copied
 
 
-def suggest_bullets(job_text: str, resume_text: str, tries: int = 2) -> list[str]:
-    """Ask the local model for 3 tailored bullets; drop any that aren't real bullets."""
-    prompt = PROMPT.format(job=job_text, resume=resume_text)
+def suggest_bullets(
+    job_text: str, resume_text: str, focus: list[str] | None = None, tries: int = 2
+) -> list[str]:
+    """Ask the local model for 3 tailored bullets; drop any that aren't real bullets.
+
+    focus = the job's must-haves, so the bullets aim at what this job cares about.
+    """
+    aim = ""
+    if focus:
+        aim = (
+            "Aim the bullets at these must-haves, where the resume truly shows them: "
+            + ", ".join(focus)
+            + "\n"
+        )
+    prompt = PROMPT.format(job=job_text, resume=resume_text, focus=aim)
     for _ in range(tries):  # small models sometimes return titles; ask once more if so
         # temperature 0.4 adds a little variety, so a second try can differ
         bullets = ask(prompt, Bullets, temperature=0.4).bullets

@@ -54,7 +54,7 @@ def test_full_run_with_a_fake_ai(monkeypatch):
     monkeypatch.setattr(
         decoder,
         "suggest_bullets",
-        lambda job, resume: ["Automated 45 releases with Python across teams"],
+        lambda job, resume, focus: ["Automated 45 releases with Python across teams"],
     )
     messages = []  # the progress function below collects each message here
     decoded = decoder.decode(JOB, RESUME, progress=messages.append)

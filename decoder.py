@@ -130,7 +130,8 @@ def decode(job_text, resume_text="", use_ai=True, progress=say_nothing):
     progress(f"3/3 {MODEL} is writing resume bullets...")
     try:
         gaps = decoded.gaps()
-        for text in suggest_bullets(job_text, resume_text):
+        focus = decoded.insights.must_haves  # aim the bullets at this job's must-haves
+        for text in suggest_bullets(job_text, resume_text, focus):
             invented = sorted(unsupported_numbers(text, resume_text))
             warnings = bullet_warnings(text, resume_text, gaps)
             decoded.bullets.append(Bullet(text, invented, warnings))

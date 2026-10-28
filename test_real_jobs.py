@@ -5,7 +5,13 @@ import decoder
 import evidence
 from bullets import bullet_warnings
 from evidence import find_by_meaning, named_tools, proves
-from extract import JobInsights, Requirement, apply_text_rules, said_not_needed
+from extract import (
+    JobInsights,
+    Requirement,
+    apply_text_rules,
+    is_vague,
+    said_not_needed,
+)
 
 # Short lines in the style of Shaya's resume (each line is one resume bullet)
 RESUME = """- Scaled self-healing automation across the portfolio, resolving ~90% of known issues without human intervention.
@@ -74,7 +80,7 @@ def test_score_breakdown_weights_must_haves(monkeypatch):
 
     monkeypatch.setattr(decoder, "extract", fake_extract)
     monkeypatch.setattr(decoder, "find_by_meaning", lambda missing, resume: {})
-    monkeypatch.setattr(decoder, "suggest_bullets", lambda job, resume: [])
+    monkeypatch.setattr(decoder, "suggest_bullets", lambda job, resume, focus: [])
     decoded = decoder.decode("any job", RESUME)
     assert decoded.breakdown() == {"must": (1, 2), "nice": (1, 1), "not_required": 1}
     assert decoded.weighted_score() == 60  # (2*1 + 1) of (2*2 + 1)
@@ -143,6 +149,53 @@ def test_lightspeed_bullet_upgraded_audit_fixes_to_automated():
     )
     warnings = bullet_warnings(bullet, RESUME, gaps=[])
     assert 'says "automated", but your resume line doesn\'t' in warnings
+
+
+# --- Ashby, second run (Oct 28): vague names and a wrong "not required" ---------------
+
+
+def test_umbrella_names_are_dropped():
+    assert is_vague("Technical Skills")
+    assert is_vague("Leadership Experience")
+    assert not is_vague("Stakeholder Communication")
+    assert not is_vague("Coaching Engineers")
+
+
+def test_ai_cannot_mark_coding_not_required_without_proof():
+    # The AI said "Hands-on Coding" wasn't needed; the posting never says that
+    ai_said = [
+        Requirement(name="Technical Skills", importance="must-have"),
+        Requirement(name="Hands-on Coding", importance="not required"),
+        Requirement(name="Redis", importance="not required"),
+    ]
+    fixed = apply_text_rules(ai_said, ASHBY_JOB)
+    assert [(r.name, r.importance) for r in fixed] == [
+        ("Hands-on Coding", "must-have"),  # no proof, so back to must-have
+        ("Redis", "not required"),  # the posting really says so
+    ]
+
+
+def test_warning_quotes_the_real_word():
+    bullet = (
+        "Improved reliability standards and automation for critical systems, raising "
+        "availability across critical systems to 99.9% with SLOs."
+    )
+    warnings = bullet_warnings(bullet, RESUME, gaps=[])
+    assert 'says "automation", but your resume line doesn\'t' in warnings
+
+
+def test_bullets_are_aimed_at_the_must_haves(monkeypatch):
+    import bullets
+
+    prompts = []  # the fake AI saves each prompt here, so we can read it
+
+    def fake_ask(prompt, shape, temperature=0):
+        prompts.append(prompt)
+        return bullets.Bullets(bullets=["Coached 5 senior managers who led a 40-person team"])
+
+    monkeypatch.setattr(bullets, "ask", fake_ask)
+    bullets.suggest_bullets("any job", RESUME, focus=["coaching engineers", "hiring"])
+    assert "coaching engineers, hiring" in prompts[0]
 
 
 def test_bullet_must_not_name_a_real_gap():
