@@ -63,16 +63,18 @@ Your resume and job files never leave your computer. The samples in this repo ar
 - A skill written very differently in your resume can show as missing; check the "Possibly shown in other words" list.
 - For now you save the job posting as a text file; the web app will add job links and resume uploads.
 
-## Tool 2: Job Radar (in progress, ships Oct 29)
+## Tool 2: Job Radar (v0.2.0)
 
-Checks the public job boards of the companies you choose (Greenhouse, Lever and Ashby, which need no login), keeps only the roles that match your titles and places, scores each one against your resume with JD Decoder's rules, and shows only roles that are new since the last run.
+Every weekday morning, Job Radar checks the public job boards of the companies you choose (Greenhouse and Lever, no login needed), keeps only the roles that match your titles and places, scores each one against your resume with JD Decoder's rules, and shows only what's new since the last run. It also reads the LinkedIn and Indeed job-alert emails you save, so those roles land in the same list.
 
     python radar.py --resume private/resume.md
 
-- Edit `radar_config.json`: your companies (`board` is `greenhouse`, `lever` or `ashby`; `slug` is the company's name in the board's web address), the titles and places you want, and words to exclude.
+- Edit `radar_config.json`: your companies (`board` is `greenhouse` or `lever`; `slug` is the company's name in the board's web address), the titles and places you want, and words to exclude.
 - `--all` shows every match, not only new ones.
-- Each run saves a Markdown digest in `digests/`. Your digests, `seen.json` and resume stay on your computer (they're in `.gitignore`).
-- Many banks use Workday career sites, which have no public API. For those, use the bank's own email job alerts. Job Radar never scrapes websites or LinkedIn.
+- **Alert emails:** in Gmail, open a LinkedIn or Indeed job alert → ⋮ → **Download message**, and move the `.eml` file into `private/alerts/`. `--alerts <folder>` reads another folder (try `--alerts samples/alerts`). Alert jobs are checked by title only, because the email has no job text.
+- Each run saves a Markdown digest in `digests/`. Your digests, `seen.json`, saved emails and resume stay on your computer (they're in `.gitignore`).
+- **Runs by itself:** `.github/workflows/radar.yml` runs Job Radar on GitHub every weekday at 11:30 UTC with the fictional sample resume. Open **Actions → Job Radar daily** to read the digest, or click **Run workflow** to run it now.
+- Banks on Workday career sites have no public API: use their own email job alerts. Job Radar never scrapes websites or LinkedIn, and it never applies for you.
 
 Coming next: the HireOps web app. Paste a job link or the job text, upload your resume (PDF, Word or text), and click Decode, all on your own laptop.
 
