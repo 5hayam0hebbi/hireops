@@ -1,0 +1,28 @@
+# radar.yml - GitHub runs Job Radar every weekday morning, even when your laptop is off
+name: Job Radar daily
+
+on:
+  schedule:
+    # Minute 30, hour 11 (UTC), any day of the month, any month, Monday(1) to Friday(5).
+    # 11:30 UTC is 7:30 a.m. in Toronto until Nov 1, then 6:30 a.m. in winter.
+    - cron: "30 11 * * 1-5"
+  # Adds a "Run workflow" button on GitHub, so you can run it any time
+  workflow_dispatch:
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      # On GitHub there's no private/ folder, so it uses the fictional sample resume
+      - name: Run Job Radar
+        run: python radar.py --all
+      # GITHUB_STEP_SUMMARY is a file GitHub shows on the run's page
+      - name: Show the digest on the run's page
+        run: |
+          if [ -d digests ]; then cat digests/*.md >> "$GITHUB_STEP_SUMMARY"; fi
