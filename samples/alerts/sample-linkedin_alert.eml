@@ -1,0 +1,16 @@
+From: LinkedIn Job Alerts <jobalerts-noreply@linkedin.com>
+To: alex.rivera@example.com
+Subject: "Director Site Reliability": 2 new jobs in Toronto (fictional sample)
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+
+<html><body>
+<p>Your job alert for Director Site Reliability in Toronto</p>
+<a href="https://www.linkedin.com/comm/jobs/view/4000000001/?trackingId=abc&amp;refId=1"><img src="logo.png"></a>
+<a href="https://www.linkedin.com/comm/jobs/view/4000000001/?trackingId=abc&amp;refId=1">Director, Site Reliability Engineering</a>
+<p>Northwind Bank (fictional) &middot; Toronto, ON</p>
+<a href="https://www.linkedin.com/comm/jobs/view/4000000002/?trackingId=def">Senior Manager, Platform Engineering</a>
+<p>Contoso Financial (fictional) &middot; Toronto, ON (Hybrid)</p>
+<a href="https://www.linkedin.com/comm/jobs/view/4000000002/?trackingId=def">View job</a>
+<a href="https://www.linkedin.com/comm/jobs/alerts?unsubscribe=1">Unsubscribe</a>
+</body></html>

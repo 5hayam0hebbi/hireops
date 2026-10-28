@@ -7,13 +7,14 @@ from pathlib import Path
 
 import requests
 
-from boards import fetch_greenhouse, fetch_lever
+from alerts import read_alerts
+from boards import fetch_ashby, fetch_greenhouse, fetch_lever
 from matcher import match, mentions
 
 logger = logging.getLogger(__name__)
 
 # Which function reads which kind of board. A dictionary can hold functions too.
-FETCHERS = {"greenhouse": fetch_greenhouse, "lever": fetch_lever}
+FETCHERS = {"greenhouse": fetch_greenhouse, "lever": fetch_lever, "ashby": fetch_ashby}
 SEEN_FILE = "seen.json"
 
 
@@ -40,13 +41,18 @@ def fetch_all(companies):
     return jobs
 
 
-def is_match(job, titles, locations, exclude):
-    """True if the title and location fit, and the title has no excluded word."""
+def title_fits(job, titles, exclude):
+    """True if the title has one of your titles and none of your excluded words."""
     # any() is True if at least one of the checks inside it is True
     title_ok = any(mentions(job["title"], word) for word in titles)
-    location_ok = any(mentions(job["location"], place) for place in locations)
     excluded = any(mentions(job["title"], word) for word in exclude)
-    return title_ok and location_ok and not excluded
+    return title_ok and not excluded
+
+
+def is_match(job, titles, locations, exclude):
+    """True if the title fits (see title_fits) and the location is one of yours."""
+    location_ok = any(mentions(job["location"], place) for place in locations)
+    return title_fits(job, titles, exclude) and location_ok
 
 
 def load_seen(path=SEEN_FILE):
@@ -89,7 +95,7 @@ def score_jobs(jobs, resume_text, skills):
     return sorted(jobs, key=by_score, reverse=True)
 
 
-def write_digest(jobs, folder="digests"):
+def write_digest(jobs, alert_jobs=(), folder="digests"):
     """Save the results as a Markdown table, for example digests/2026-10-23.md."""
     # Today's date as text: %Y is the year, %m the month, %d the day
     today = time.strftime("%Y-%m-%d")
@@ -110,6 +116,10 @@ def write_digest(jobs, folder="digests"):
         link = f"[{job['title']}]({job['url']})"
         row = f"| {job['score']}% | {job['company']} | {link} | {job['location']} |"
         lines.append(row)
+        if alert_jobs:  # an empty list or () counts as False, so this part is skipped
+            lines += ["", "## From your job alerts", "", "| Source | Role |", "|---|---|"]
+            for job in alert_jobs:
+                lines.append(f"| {job['company']} | [{job['title']}]({job['url']}) |")
     # Join the lines with line breaks and write them all to the file
     path.write_text("\n".join(lines) + "\n")
     return path
@@ -119,6 +129,9 @@ def main():
     parser = argparse.ArgumentParser(description="New roles at your target companies.")
     parser.add_argument("-r", "--resume", default="samples/resume.md", help="resume")
     parser.add_argument("--all", action="store_true", help="include roles seen before")
+    parser.add_argument(
+        "--alerts", default="private/alerts", help="folder of saved alert emails"
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -136,11 +149,14 @@ def main():
     jobs = fetch_all(config["companies"])
     titles, places, exclude = config["titles"], config["locations"], config["exclude"]
     matches = [job for job in jobs if is_match(job, titles, places, exclude)]
+    # Jobs from your saved alert emails have no place or job text: check the title only
+    alert_jobs = [j for j in read_alerts(args.alerts) if title_fits(j, titles, exclude)]
 
     seen = load_seen()
     if not args.all:
         matches = new_only(matches, seen)
-    if not matches:
+        alert_jobs = new_only(alert_jobs, seen)
+    if not matches and not alert_jobs:
         print("\nNo new matching roles since the last run.")
 
     matches = score_jobs(matches, resume_text, skills)
@@ -154,9 +170,19 @@ def main():
             # [:3] keeps the first three; join glues them together with commas
             print(f"       Missing: {', '.join(job['missing'][:3])}")
 
-    if matches:
-        path = write_digest(matches)
-    print(f"\nSaved {path}")
+        if alert_jobs:
+            print(f"\nFrom your job alerts ({len(alert_jobs)}; open each one to read it):")
+        for job in alert_jobs:
+            print(f"  {job['company']} | {job['title']}")
+            print(f"       {job['url']}")
+
+    if matches or alert_jobs:
+        path = write_digest(matches, alert_jobs)
+        print(f"\nSaved {path}")
+
+    # Remember everything reported today, so tomorrow shows only new roles
+    seen.update(job["id"] for job in matches + alert_jobs)
+
     # Remember everything reported today, so tomorrow shows only new roles
     seen.update(job["id"] for job in matches)
     save_seen(seen)

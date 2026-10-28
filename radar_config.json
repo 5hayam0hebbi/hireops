@@ -27,7 +27,10 @@
     {"name": "Shakudo", "board": "lever", "slug": "shakudo"},
     {"name": "Kepler Communications", "board": "lever", "slug": "kepler"},
     {"name": "Smile Digital Health", "board": "lever", "slug": "smiledigitalhealth"},
-    {"name": "Palantir", "board": "lever", "slug": "palantir"}
+    {"name": "Palantir", "board": "lever", "slug": "palantir"},
+    {"name": "Wealthsimple", "board": "ashby", "slug": "wealthsimple"},
+    {"name": "Lightspeed", "board": "ashby", "slug": "lightspeedhq"},
+    {"name": "Cohere", "board": "ashby", "slug": "cohere"}
   ],
   "exclude": ["Intern", "Internship", "Co-op", "Junior", "Jr", "Sales", "Account Executive"],
   "titles": ["SRE", "Site Reliability", "Platform", "DevOps", "Infrastructure", "CI/CD", "Production Support", "Software Engineering", "Engineering Manager"],

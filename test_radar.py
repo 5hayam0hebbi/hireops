@@ -1,5 +1,5 @@
 # test_radar.py - checks for Job Radar that never touch the internet
-from boards import clean, from_greenhouse, from_lever
+from boards import clean, from_ashby, from_greenhouse, from_lever
 from radar import is_match, new_only, score_jobs
 
 # A made-up Greenhouse job, in the same shape the real API sends
@@ -78,3 +78,20 @@ def test_from_lever():
 
 def test_excluded_word_blocks_a_match():
     assert not is_match(job("Junior Platform Engineer"), TITLES, LOCATIONS, ["Junior"])
+
+
+def test_from_ashby_joins_all_places():
+    ashby_job = {
+        "id": "abc",
+        "title": "Manager, Site Reliability Engineering",
+        "location": "Toronto",
+        "secondaryLocations": [{"location": "Montreal"}],
+        "address": {"postalAddress": {"addressCountry": "Canada"}},
+        "isRemote": True,
+        "jobUrl": "https://example.com/abc",
+        "descriptionHtml": "<p>Run <b>Kubernetes</b></p>",
+    }
+    result = from_ashby("Lightspeed", ashby_job)
+    assert result["id"] == "ashby-abc"
+    assert result["location"] == "Toronto; Montreal; Canada; Remote"
+    assert result["description"] == "Run Kubernetes"

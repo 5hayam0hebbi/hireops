@@ -60,6 +60,41 @@ def fetch_lever(company, slug):
     # Lever's answer is the list of jobs itself, so no ["jobs"] here
     return [from_lever(company, job) for job in response.json()]
 
+
+def from_ashby(company, job):
+    """Turn one Ashby job into the same standard shape."""
+    # Ashby gives a main place, extra places, a country and a remote flag separately.
+    # Join them into one text, so the place filter can find "Toronto" or "Canada".
+    places = [job.get("location", "")]
+    # "or []" covers a job with no extra places (None), so the loop still works
+    places += [
+        extra.get("location", "") for extra in job.get("secondaryLocations") or []
+    ]
+    postal = (job.get("address") or {}).get("postalAddress") or {}
+    places.append(postal.get("addressCountry", ""))
+    if job.get("isRemote"):
+        places.append("Remote")
+    return {
+        "id": f"ashby-{job['id']}",
+        "company": company,
+        "title": job["title"],
+        # Skip empty pieces, then join the rest with "; "
+        "location": "; ".join(place for place in places if place),
+        "url": job.get("jobUrl", ""),
+        "description": clean(job.get("descriptionHtml") or job.get("descriptionPlain")),
+    }
+
+
+def fetch_ashby(company, slug):
+    """Every open, listed job on a company's Ashby board."""
+    url = f"https://api.ashbyhq.com/posting-api/job-board/{slug}"
+    response = requests.get(url, timeout=TIMEOUT)
+    response.raise_for_status()
+    jobs = response.json()["jobs"]
+    # isListed False means a hidden posting; .get(..., True) keeps jobs without the flag
+    return [from_ashby(company, job) for job in jobs if job.get("isListed", True)]
+
+
 if __name__ == "__main__":
     jobs = fetch_greenhouse("Cloudflare", "cloudflare")
     print(f"{len(jobs)} open jobs at Cloudflare. The first five:")
