@@ -26,3 +26,13 @@ jobs:
       - name: Show the digest on the run's page
         run: |
           if [ -d digests ]; then cat digests/*.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      # Keep the digest file with the run, so you can download it for 30 days
+      - name: Keep the digest file
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-radar-digest
+          path: digests/
+          retention-days: 30
+          # On a day with no matches there's no folder; that's fine, not an error
+          if-no-files-found: ignore
