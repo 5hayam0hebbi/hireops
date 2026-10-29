@@ -71,6 +71,8 @@ Your resume and job files never leave your computer. The samples in this repo ar
 
 ## Tool 2: Job Radar (v0.2.0)
 
+![Job Radar output on the sample resume](docs/job-radar.png)
+
 Every weekday morning, Job Radar checks the public job boards of the companies you choose (Greenhouse and Lever, no login needed), keeps only the roles that match your titles and places, scores each one against your resume with JD Decoder's rules, and shows only what's new since the last run. It also reads the LinkedIn and Indeed job-alert emails you save, so those roles land in the same list.
 
     python radar.py --resume private/resume.md

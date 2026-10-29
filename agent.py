@@ -36,6 +36,8 @@ Use the tools to reach the goal. Rules:
 - Only mention jobs and job IDs that a tool returned to you. Never make one up.
 - Use save_job only when the goal asks you to shortlist or save a job.
 - If a tool returns an error, fix your request or explain the problem.
+- Call ONE tool per turn and wait for its result. Never guess a job ID.
+- Scores come only from score_job (0-100). Never write a score yourself.
 - Finish in under 150 words: for each job, its ID, title, company, score and one reason."""
 
 
@@ -142,10 +144,12 @@ class Tools:
         for job in fits:
             self.jobs[job["id"]] = job  # remember it, so later tools can use the ID
         # [:15] keeps the answer short; the model only needs IDs, titles and places
-        return [
+        jobs = [
             {"id": j["id"], "title": j["title"], "location": j["location"]}
             for j in fits[:15]
         ]
+        # A next step inside the result: small models follow this better than the prompt
+        return {"jobs": jobs, "next": "To score a job, call score_job with its id."}
 
     def job(self, job_id):
         """The job with this ID, if a tool returned it earlier in this run."""
@@ -247,6 +251,41 @@ def check_answer(answer, tools):
         if job_id not in tools.jobs
     ]
 
+# A score written in the answer, like "Score: 92" or "score 8/10"
+SCORE = re.compile(r"\bscore\b\D{0,3}\d", re.IGNORECASE)
+MAX_CORRECTIONS = 2  # most times one run may send an answer back to the model
+# "I'll call score_job", "Let me use find_jobs"...: a promise to call, not a call.
+# Plain mentions ("Call list_companies for the names") don't count.
+ANNOUNCED = re.compile(
+    r"\b(?:I'll|I will|let me|I need to|I'm going to|I am going to)\b[^.\n]{0,60}?"
+    r"\b(" + "|".join(SPECS) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def answer_problem(answer, run):
+    """Why the final answer can't be accepted yet, or "" if it's fine.
+
+    Scores must come from score_job. A score in the answer with no successful
+    score_job call means the model made the number up.
+    """
+    scored = any(
+        s["tool"] == "score_job" and not s["result"].startswith("Error")
+        for s in run.steps
+    )
+    if SCORE.search(answer) and not scored:
+        return (
+            "Your answer shows scores, but you never called score_job. "
+            "Call score_job for each job ID you mention, then answer again."
+        )
+    # The model announced a call instead of making it ("First, I'll call score_job")
+    announced = ANNOUNCED.search(answer)
+    if announced:
+        return (
+            f"You said you would use {announced.group(1)} but didn't call it. "
+            "Call it now, or give your final answer."
+        )
+    return ""
 
 @dataclass
 class Run:
@@ -257,6 +296,7 @@ class Run:
     stopped: str = ""  # why it stopped early, if it did
     warnings: list = field(default_factory=list)
     tokens: int = 0  # word-pieces read + written in this run
+    corrections: int = 0  # answers sent back to the model to fix    
 
 
 def say_nothing(message):
@@ -301,16 +341,35 @@ def run_agent(goal, tools, client=None, progress=say_nothing):
         message = response.message
         calls = message.tool_calls or []
         if not calls:  # no tool asked for: this is the final answer
-            run.answer = (message.content or "").strip()
+            answer = (message.content or "").strip()
+            problem = answer_problem(answer, run)
+            if problem and run.corrections < MAX_CORRECTIONS:
+                # Guardrail: send a made-up answer back instead of accepting it
+                run.corrections += 1
+                progress(f"  step {step}: answer sent back: {problem}")
+                logger.info("agent_correction %s", json.dumps({"step": step}))
+                messages.append(message)
+                messages.append({"role": "user", "content": problem})
+                continue
+            run.answer = answer
             run.warnings = check_answer(run.answer, tools)
+            if problem:  # still wrong after every correction: accept it, but warn
+                run.warnings.append(
+                    f"Not fixed after {MAX_CORRECTIONS} tries: {problem}"
+                )
             return run
 
         messages.append(message)  # the model's request stays in the conversation
-        for call in calls:
+        # Guardrail: one tool per turn. A small model often asks for find_jobs AND
+        # score_job at once, guessing job IDs it hasn't seen yet. Only the first call
+        # runs; the model sees its real result, then asks for the next tool.
+        for call in calls[:1]:
             name = call.function.name
             args = dict(call.function.arguments or {})
             progress(f"  step {step}: {name} {json.dumps(args)}")
             result = run_tool(tools, name, args)
+            if len(calls) > 1:
+                result += " (Only one tool runs per turn. Ask for the next one now.)"
             run.steps.append(
                 {"step": step, "tool": name, "args": args, "result": result[:200]}
             )

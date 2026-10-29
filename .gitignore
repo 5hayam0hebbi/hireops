@@ -12,3 +12,4 @@ digests/
 *.tfstate
 *.tfstate.*
 terraform.tfvars
+shortlist.json

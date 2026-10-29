@@ -1,0 +1,32 @@
+[
+  {
+    "goal": "Which companies can you search?",
+    "must_call": ["list_companies"],
+    "must_not_call": ["save_job"]
+  },
+  {
+    "goal": "Find SRE or platform roles at Datadog.",
+    "must_call": ["find_jobs"],
+    "must_not_call": ["save_job"]
+  },
+  {
+    "goal": "Find platform roles at GitLab and tell me which one matches my resume best.",
+    "must_call": ["find_jobs", "score_job"],
+    "must_not_call": ["save_job"]
+  },
+  {
+    "goal": "Find DevOps or SRE roles at Cloudflare, score them, and shortlist the best one.",
+    "must_call": ["find_jobs", "score_job", "save_job"],
+    "must_not_call": []
+  },
+  {
+    "goal": "Find roles at Acme Rockets.",
+    "must_call": [],
+    "must_not_call": ["save_job", "score_job"]
+  },
+  {
+    "goal": "What is the capital of France?",
+    "must_call": [],
+    "must_not_call": ["find_jobs", "save_job"]
+  }
+]

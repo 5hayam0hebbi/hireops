@@ -194,3 +194,72 @@ def test_ollama_not_running(monkeypatch, tmp_path):
 
     run = agent.run_agent("Any jobs?", tools, client=DownClient())
     assert "Ollama isn't running" in run.stopped
+
+def test_only_one_tool_runs_per_turn(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(
+                calls=[
+                    call("find_jobs", company="Datadog"),
+                    call("score_job", job_id="(job ID returned by find_jobs)"),
+                ]
+            ),
+            reply("Found greenhouse-1."),
+        ]
+    )
+    run = agent.run_agent("Find and score Datadog jobs", tools, client=client)
+    assert [s["tool"] for s in run.steps] == ["find_jobs"]  # the guess never ran
+    assert "Only one tool runs per turn" in client.tool_results[0]
+
+def test_made_up_score_is_sent_back(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("find_jobs", company="Datadog")]),
+            reply("greenhouse-1 Senior SRE, Score: 92"),  # made up: no score_job yet
+            reply(calls=[call("score_job", job_id="greenhouse-1")]),
+            reply("greenhouse-1 Senior SRE, Score: 67"),
+        ]
+    )
+    run = agent.run_agent("Score Datadog jobs", tools, client=client)
+    assert [s["tool"] for s in run.steps] == ["find_jobs", "score_job"]
+    assert run.corrections == 1
+    assert run.answer.endswith("Score: 67") and run.warnings == []
+
+
+def test_made_up_score_after_every_correction_is_flagged(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    made_up = [reply("greenhouse-1 Senior SRE, Score: 92")] * 3
+    client = FakeClient([reply(calls=[call("find_jobs", company="Datadog")])] + made_up)
+    run = agent.run_agent("Score Datadog jobs", tools, client=client)
+    assert run.corrections == agent.MAX_CORRECTIONS
+    assert "never called score_job" in run.warnings[-1]
+
+
+def test_talking_about_a_tool_is_sent_back(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("find_jobs", company="Datadog")]),
+            reply("First, I'll call score_job with the job IDs."),  # talk, no call
+            reply(calls=[call("score_job", job_id="greenhouse-1")]),
+            reply("greenhouse-1 Senior SRE fits best (67)."),
+        ]
+    )
+    run = agent.run_agent("Which Datadog job fits me best?", tools, client=client)
+    assert [s["tool"] for s in run.steps] == ["find_jobs", "score_job"]
+    assert run.corrections == 1
+
+def test_a_plain_tool_mention_is_accepted(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("find_jobs", company="Acme")]),
+            reply(
+                "Acme isn't one of your companies. Call list_companies for the names."
+            ),
+        ]
+    )
+    run = agent.run_agent("Find roles at Acme", tools, client=client)
+    assert run.corrections == 0 and run.warnings == []
