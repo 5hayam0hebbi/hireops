@@ -288,6 +288,9 @@ ANNOUNCED = re.compile(
 TYPED_CALL = re.compile(
     r"\b(?:" + "|".join(SPECS) + r")\s*\(|\"name\":\s*\"(?:" + "|".join(SPECS) + r")\""
 )
+# An answer that is only a tool name, like find_jobs or `find_jobs`.
+# ^ and $ mean the whole answer; \W* allows quotes, backticks or a period around it.
+BARE_TOOL = re.compile(r"^\W*(?:" + "|".join(SPECS) + r")\W*$")
 
 
 def answer_problem(answer, run):
@@ -305,8 +308,8 @@ def answer_problem(answer, run):
             "Your answer shows scores, but you never called score_job. "
             "Call score_job for each job ID you mention, then answer again."
         )
-    # The model typed a tool call as text instead of sending it as a call
-    if TYPED_CALL.search(answer):
+    # The model typed a tool call (or just a tool's name) as text instead of calling it
+    if TYPED_CALL.search(answer) or BARE_TOOL.match(answer):
         return (
             "You typed a tool call as text. To use a tool, call it. "
             "Otherwise answer the person in plain words."

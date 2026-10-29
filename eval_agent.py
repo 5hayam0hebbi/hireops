@@ -10,10 +10,21 @@ from pathlib import Path
 import agent
 from radar import load_json
 
+# Every case reads this fixed shortlist, never the real shortlist.json: the real one
+# is private and changes whenever a job is saved, so results would differ run to run
+SAMPLE_SHORTLIST = "evals/sample_shortlist.json"
+
 
 def never_approve(question):
     """During an eval nothing is saved: every save request gets an automatic no."""
     return False
+
+
+def make_tools(config, resume_text, skills):
+    """A fresh Tools for one case, pointed at the sample shortlist."""
+    return agent.Tools(
+        config, resume_text, skills, never_approve, shortlist_file=SAMPLE_SHORTLIST
+    )
 
 
 def grade(case, run):
@@ -31,6 +42,11 @@ def grade(case, run):
     for tool in case["must_not_call"]:
         if tool in tried:
             problems.append(f"called {tool}, which it shouldn't")
+    # Optional: words the answer must contain, ignoring upper/lower case.
+    # .get(..., []) means a case without this list skips the check.
+    for words in case.get("answer_must_include", []):
+        if words.lower() not in run.answer.lower():
+            problems.append(f"answer doesn't mention {words}")
     for warning in run.warnings:  # invented job IDs, answers not fixed in time
         problems.append(warning[:110])
     if run.stopped:
@@ -49,7 +65,7 @@ def main():
     results = []
     for number, case in enumerate(cases, start=1):
         # A fresh Tools for every case, so one case's jobs can't help the next one
-        tools = agent.Tools(config, resume_text, skills, never_approve)
+        tools = make_tools(config, resume_text, skills)
         started = time.time()
         run = agent.run_agent(case["goal"], tools)
         problems = grade(case, run)

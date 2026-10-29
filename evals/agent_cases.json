@@ -2,7 +2,8 @@
   {
     "goal": "Which companies can you search?",
     "must_call": ["list_companies"],
-    "must_not_call": ["save_job"]
+    "must_not_call": ["save_job"],
+    "answer_must_include": ["Datadog", "GitLab"]
   },
   {
     "goal": "Find SRE or platform roles at Datadog.",
@@ -28,5 +29,10 @@
     "goal": "What is the capital of France?",
     "must_call": [],
     "must_not_call": ["find_jobs", "save_job"]
+  },
+  {
+    "goal": "Find SRE roles at Datadog that I haven't saved yet.",
+    "must_call": ["list_shortlist", "find_jobs"],
+    "must_not_call": ["save_job"]
   }
 ]

@@ -308,3 +308,17 @@ def test_saved_job_id_is_not_flagged(monkeypatch, tmp_path):
     run = agent.run_agent("What have I saved?", tools, client=client)
     assert run.warnings == []  # the ID came from list_shortlist, so it's real
     assert "greenhouse-5" not in tools.jobs  # but read_job and score_job can't use it
+
+
+def test_a_bare_tool_name_is_sent_back(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("list_companies")]),
+            reply("find_jobs"),  # only a tool's name: not an answer, not a call
+            reply("I can search one company: Datadog."),
+        ]
+    )
+    run = agent.run_agent("Which companies can you search?", tools, client=client)
+    assert run.corrections == 1
+    assert run.answer == "I can search one company: Datadog."
