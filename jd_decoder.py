@@ -75,10 +75,13 @@ def print_match(decoded):
             print("  - " + skill)
     if decoded.used_ai:
         print("\nSuggested resume bullets (check every word before using them):")
+        print("  (each one says which of your lines it is based on)")
         if not decoded.bullets:
             print("  none usable this time: run it again, or try a bigger model.")
         for bullet in decoded.bullets:
             print("  - " + bullet.text)
+            if bullet.source:
+                print(f'    based on: "{bullet.source[:100]}"')
             if bullet.invented:  # an empty list counts as False
                 print(
                     f"    WARNING: {', '.join(bullet.invented)} is not in your resume"
@@ -147,6 +150,12 @@ def main():
     for note in decoded.notes:  # for example "Ollama isn't running..."
         print(note)
         logger.warning(note)
+    if decoded.usage:  # what the AI calls cost: tokens and time
+        t = decoded.tokens()
+        print(
+            f"AI usage: {t['calls']} calls · {t['prompt_tokens']:,} tokens read · "
+            f"{t['output_tokens']:,} written · {t['seconds']} s"
+        )
 
     if args.json:  # machine-readable output for other tools, then stop
         data = {

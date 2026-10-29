@@ -1,14 +1,31 @@
 # bullets.py - suggest resume bullets for a job, using ONLY what the resume already says
 import re
+from dataclasses import dataclass
 
 from pydantic import BaseModel, Field
 
 from ai import ask  # one place that talks to the model, with a time limit
-from matcher import mentions
+from evidence import numbered_lines  # the same line numbers the meaning check uses
+from matcher import mentions, stem
+
+
+# One bullet idea from the AI: the sentence, and the number of the resume line it is
+# based on. Asking for the line makes the AI build on a real fact, and lets the code
+# check that the bullet really says what that line says.
+class BulletIdea(BaseModel):
+    text: str = Field(max_length=400)
+    line: int
 
 
 class Bullets(BaseModel):
-    bullets: list[str] = Field(max_length=5)  # at most 5, so it can't go on forever
+    bullets: list[BulletIdea] = Field(max_length=5)  # at most 5, so it can't go on forever
+
+
+# What suggest_bullets() gives back: the bullet, and YOUR resume line it came from
+@dataclass
+class Suggestion:
+    text: str
+    source: str
 
 
 PROMPT = """You help a job seeker tailor their resume honestly.
@@ -18,15 +35,16 @@ Each bullet is ONE achievement sentence of 12 to 30 words. Start it with an acti
 Never return a job title, a heading, a company name or a date on its own.
 Use ONLY experience that is stated in the resume.
 Never invent employers, tools, numbers or achievements.
-Base each bullet on ONE resume line: keep its numbers with the work they describe,
-and never move a number from one line to another line's achievement.
+Base each bullet on ONE numbered resume line and give that line's number as "line".
+Keep the line's numbers with the work they describe, and never move a number from
+one line to another line's achievement.
 Never upgrade what was done (for example "fixed" must not become "automated").
 Use the job's wording where the resume truly supports it.
 {focus}
 Job description:
 {job}
 
-Resume:
+Numbered resume:
 {resume}"""
 
 
@@ -71,6 +89,35 @@ def content_words(text: str) -> set[str]:
     return {w for w in words if w not in STOP_WORDS and len(w) > 2}
 
 
+# Everyday resume words: a bullet may add these without claiming anything new
+GENERIC = {
+    "led", "lead", "leading", "built", "build", "developed", "develop", "designed",
+    "implemented", "created", "improved", "reduced", "increased", "managed", "delivered",
+    "drove", "established", "scaled", "ensured", "using", "utilizing", "used", "across",
+    "resulting", "including", "through", "while", "team", "teams", "multiple", "new",
+    "strong", "effective", "efficient", "key", "critical", "enterprise", "solutions",
+}
+
+# A bullet must share at least this many meaningful words with its source line
+MIN_SHARED = 3
+
+
+def borrowed_words(bullet: str, resume_text: str, job_text: str) -> list[str]:
+    """Words in the bullet that the job uses but your resume never does.
+
+    This is how a tailored bullet invents a claim: it copies the job's words
+    ("Talent Acquisition", "AI model performance") onto your experience.
+    """
+    resume = {stem(word) for word in re.findall(r"[a-z0-9+#]+", resume_text.lower())}
+    job = {stem(word) for word in re.findall(r"[a-z0-9+#]+", job_text.lower())}
+    found = []
+    for word in sorted(content_words(bullet) - GENERIC):
+        root = stem(word)
+        if root in job and root not in resume and word not in found:
+            found.append(word)
+    return found
+
+
 def source_line(bullet: str, resume_text: str) -> str:
     """The resume line the bullet most likely came from (the most shared words)."""
     lines = [line.strip(" -•*") for line in resume_text.splitlines() if line.strip()]
@@ -81,16 +128,24 @@ def source_line(bullet: str, resume_text: str) -> str:
     return max(lines, key=lambda line: len(words & content_words(line)))
 
 
-def bullet_warnings(bullet: str, resume_text: str, gaps: list[str]) -> list[str]:
+def bullet_warnings(
+    bullet: str,
+    resume_text: str,
+    gaps: list[str],
+    line: str = "",
+    job_text: str = "",
+) -> list[str]:
     """Plain-English problems with a suggested bullet. An empty list = no problems found.
 
+    line = the resume line the AI said the bullet is based on (guessed if empty).
     1. Numbers from another line: every number must be on the bullet's source line,
        so "90%" (self-healing) can't be glued to "35%" (runbooks).
     2. Upgraded claims: "automated" only if the source line says so.
     3. Real gaps: a bullet must not name a skill your resume doesn't show.
+    4. Borrowed claims: words taken from the job that your resume never uses.
     """
     warnings = []
-    line = source_line(bullet, resume_text)
+    line = line or source_line(bullet, resume_text)
     resume_numbers = metrics_in(resume_text)
     for number in sorted(metrics_in(bullet)):
         # Numbers not in the resume at all are reported by unsupported_numbers()
@@ -107,6 +162,11 @@ def bullet_warnings(bullet: str, resume_text: str, gaps: list[str]) -> list[str]
     for skill in gaps:
         if mentions(bullet, skill):
             warnings.append(f"names {skill}, which your resume doesn't show")
+    if job_text:
+        borrowed = borrowed_words(bullet, resume_text, job_text)
+        if borrowed:
+            words = ", ".join(f'"{w}"' for w in borrowed)
+            warnings.append(f"uses {words} from the job, but your resume never does")
     return warnings
 
 
@@ -119,11 +179,14 @@ def looks_like_bullet(bullet: str, resume_text: str) -> bool:
 
 def suggest_bullets(
     job_text: str, resume_text: str, focus: list[str] | None = None, tries: int = 2
-) -> list[str]:
-    """Ask the local model for 3 tailored bullets; drop any that aren't real bullets.
+) -> list[Suggestion]:
+    """Ask the local model for 3 tailored bullets, each tied to one of your lines.
 
     focus = the job's must-haves, so the bullets aim at what this job cares about.
+    A bullet is dropped if it isn't a real bullet, names a line that doesn't exist,
+    or shares fewer than MIN_SHARED meaningful words with that line.
     """
+    lines, numbered = numbered_lines(resume_text)
     aim = ""
     if focus:
         aim = (
@@ -131,12 +194,20 @@ def suggest_bullets(
             + ", ".join(focus)
             + "\n"
         )
-    prompt = PROMPT.format(job=job_text, resume=resume_text, focus=aim)
+    prompt = PROMPT.format(job=job_text, resume=numbered, focus=aim)
     for _ in range(tries):  # small models sometimes return titles; ask once more if so
         # temperature 0.4 adds a little variety, so a second try can differ
-        bullets = ask(prompt, Bullets, temperature=0.4).bullets
-        # Keep only the ones that pass the check (a job title copied back is dropped)
-        good = [b for b in bullets if looks_like_bullet(b, resume_text)]
+        ideas = ask(prompt, Bullets, temperature=0.4).bullets
+        good = []
+        for idea in ideas:
+            if not looks_like_bullet(idea.text, resume_text):
+                continue  # a job title or a copied line
+            if not 1 <= idea.line <= len(lines):
+                continue  # points at a line that doesn't exist
+            source = lines[idea.line - 1].strip(" -•*")  # without the bullet mark
+            if len(content_words(idea.text) & content_words(source)) < MIN_SHARED:
+                continue  # says something its source line doesn't
+            good.append(Suggestion(text=idea.text, source=source))
         if good:
             return good
     return []

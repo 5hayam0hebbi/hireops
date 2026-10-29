@@ -14,6 +14,8 @@ Give it a job description and your resume. It tells you:
 - Suggested resume bullets that use only what your resume already says
 - Suggested edits to your resume for this job: lines to modify, keywords to add, lines to remove
 - A warning whenever the AI adds a number that isn't in your resume
+- Must-haves and nice-to-haves shown, a weighted score, and a list of real gaps (skills with no proof in your resume)
+- How much each run cost: AI calls, tokens read and written, and seconds
 
 ### Example
 
@@ -45,8 +47,12 @@ Skills the word check misses go back to the AI, which points to the resume line 
 ### What the AI does and doesn't do
 
 - It reads the job description, finds its skills and red flags, and suggests resume bullets and edits. It runs locally through Ollama (llama3.2 by default; set `HIREOPS_MODEL` to try another model).
-- It is told never to invent experience. The code drops any red flag whose quote isn't in the posting and any edit that points to a line your resume doesn't have, and it flags every number that isn't in your resume.
+- It is told never to invent experience, and plain code checks its work:
+  - a requirement is dropped if the posting never mentions it, and marked "not required" only if the posting says so
+  - a red flag is dropped if its quote isn't in the posting or is standard HR or legal wording
+  - each bullet must name the resume line it is based on and share real words with it; the code warns when a bullet invents a number, moves a number from another line, upgrades a claim ("fixed" to "automated"), or borrows words from the job that your resume never uses
 - Every AI step has a time limit (`HIREOPS_TIMEOUT`, 180 seconds by default) and gets one retry, so a run never hangs.
+- Every AI call is logged as one JSON line (`ai_usage`) with its tokens read, tokens written and seconds, in `hireops.log` locally and in Log Analytics on Azure.
 - Nothing changes your resume file. Always read every suggestion before you use it.
 
 ### Privacy
@@ -55,7 +61,7 @@ Your resume and job files never leave your computer. The samples in this repo ar
 
 ### Tests
 
-`pytest -v` runs 21 tests on the rule-based parts, with no AI needed. GitHub Actions runs Ruff and the tests on every push.
+`pytest -v` runs 80 tests with no AI needed (the AI's answers are faked). `test_real_jobs.py` holds regression tests from real job postings: each mistake HireOps made on a real job became a test, so it can't come back. GitHub Actions runs Ruff and the tests on every push.
 
 ### Limitations
 

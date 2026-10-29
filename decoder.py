@@ -2,6 +2,7 @@
 import json
 from dataclasses import dataclass, field
 
+import ai
 from ai import MODEL, AIError
 from bullets import bullet_warnings, suggest_bullets, unsupported_numbers
 from evidence import find_by_meaning
@@ -22,6 +23,7 @@ class Bullet:
     text: str
     invented: list[str]
     warnings: list[str] = field(default_factory=list)
+    source: str = ""  # your resume line the bullet is based on
 
 
 # Everything one decode found. field(default_factory=list) gives each result its
@@ -35,6 +37,7 @@ class Decoded:
     bullets: list[Bullet] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)  # messages for you, e.g. AI is off
     used_ai: bool = False
+    usage: list = field(default_factory=list)  # one ai.Usage per model call in this run
 
     def gaps(self) -> list[str]:
         """Skills the job wants with NO proof at all: not word for word, not by meaning.
@@ -72,6 +75,15 @@ class Decoded:
             return 0
         return round((2 * must_have + nice_have) / total * 100)
 
+    def tokens(self) -> dict:
+        """Totals for this run: AI calls, tokens read, tokens written, seconds."""
+        return {
+            "calls": len(self.usage),
+            "prompt_tokens": sum(u.prompt_tokens for u in self.usage),
+            "output_tokens": sum(u.output_tokens for u in self.usage),
+            "seconds": round(sum(u.seconds for u in self.usage), 1),
+        }
+
     def best_score(self) -> int:
         """The score you'd have if every 'found by meaning' match is right."""
         if not self.result or not self.wanted:
@@ -90,7 +102,15 @@ def decode(job_text, resume_text="", use_ai=True, progress=say_nothing):
     progress is a function that receives a short message before each slow AI step:
     the command line passes print, and the web app passes a function that shows it.
     """
+    start = len(ai.usage_log)  # calls made before this run don't count
     decoded = Decoded(wanted=[])
+    run_steps(decoded, job_text, resume_text, use_ai, progress)
+    decoded.usage = ai.usage_log[start:]  # just this run's AI calls
+    return decoded
+
+
+def run_steps(decoded, job_text, resume_text, use_ai, progress):
+    """The steps of decode(); each `return` below ends the run early."""
 
     # Step 1: the AI reads the job and finds its skills
     if use_ai:
@@ -111,13 +131,13 @@ def decode(job_text, resume_text="", use_ai=True, progress=say_nothing):
 
     # No resume (empty or only spaces): stop here, with the job's skills only
     if not resume_text.strip():
-        return decoded
+        return
 
     # Plain rules check the resume for each wanted skill, word for word
     have = find_skills(resume_text, decoded.wanted)
     decoded.result = MatchResult(wanted=decoded.wanted, have=have)
     if not decoded.used_ai:
-        return decoded  # the meaning check and bullets need the AI
+        return  # the meaning check and bullets need the AI
 
     # Step 2: the AI looks for missed skills written in other words
     progress(f"2/3 {MODEL} is checking your resume for other wording...")
@@ -131,10 +151,11 @@ def decode(job_text, resume_text="", use_ai=True, progress=say_nothing):
     try:
         gaps = decoded.gaps()
         focus = decoded.insights.must_haves  # aim the bullets at this job's must-haves
-        for text in suggest_bullets(job_text, resume_text, focus):
-            invented = sorted(unsupported_numbers(text, resume_text))
-            warnings = bullet_warnings(text, resume_text, gaps)
-            decoded.bullets.append(Bullet(text, invented, warnings))
+        for idea in suggest_bullets(job_text, resume_text, focus):
+            invented = sorted(unsupported_numbers(idea.text, resume_text))
+            warnings = bullet_warnings(
+                idea.text, resume_text, gaps, line=idea.source, job_text=job_text
+            )
+            decoded.bullets.append(Bullet(idea.text, invented, warnings, idea.source))
     except (ConnectionError, AIError) as error:
         decoded.notes.append(f"No bullet suggestions this time: {error}")
-    return decoded

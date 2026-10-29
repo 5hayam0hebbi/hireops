@@ -7,11 +7,14 @@ from bullets import bullet_warnings
 from evidence import find_by_meaning, named_tools, proves
 from extract import (
     JobInsights,
+    RedFlag,
     Requirement,
     apply_text_rules,
     is_vague,
+    quoted_flags,
     said_not_needed,
 )
+from matcher import mentions
 
 # Short lines in the style of Shaya's resume (each line is one resume bullet)
 RESUME = """- Scaled self-healing automation across the portfolio, resolving ~90% of known issues without human intervention.
@@ -24,7 +27,10 @@ RESUME = """- Scaled self-healing automation across the portfolio, resolving ~90
 # Ashby-style posting: it names its stack, then says you don't need it
 ASHBY_JOB = """You'll manage three to five engineers and hire three to five more.
 
-I'm sharing our tech stack with the caveat that we don't require previous experience in it: TypeScript, React, GraphQL API, Node.js, Postgres, Redis."""
+Why you shouldn't apply: you don't enjoy coding or don't stay up-to-date on technology.
+
+I’m sharing our tech stack with the caveat that we don’t require previous experience in it: TypeScript, React, GraphQL API, Node.js, Postgres, Redis."""
+# (curly apostrophes on purpose: the real posting uses them, and they broke a rule)
 
 
 # --- Ashby: the tech stack is "not required" -----------------------------------------
@@ -191,7 +197,11 @@ def test_bullets_are_aimed_at_the_must_haves(monkeypatch):
 
     def fake_ask(prompt, shape, temperature=0):
         prompts.append(prompt)
-        return bullets.Bullets(bullets=["Coached 5 senior managers who led a 40-person team"])
+        idea = bullets.BulletIdea(
+            text="Converted 200 manual runbooks into automated remediation for the team",
+            line=2,
+        )
+        return bullets.Bullets(bullets=[idea])
 
     monkeypatch.setattr(bullets, "ask", fake_ask)
     bullets.suggest_bullets("any job", RESUME, focus=["coaching engineers", "hiring"])
@@ -210,3 +220,151 @@ def test_honest_bullet_has_no_warnings():
         "effort by 35% and reducing P2-P4 incident volume."
     )
     assert bullet_warnings(bullet, RESUME, gaps=["AWS"]) == []
+
+
+# --- Modern Niagara and BMO (Oct 29): labels in names, made-up requirements ------------
+
+NIAGARA_JOB = """Reporting to the VP, the Director provides both strategic direction and
+hands-on technical leadership.
+
+Deep, current, hands-on experience administering Microsoft Azure infrastructure.
+Strong working knowledge of enterprise networking, including routing and firewalls."""
+
+BMO_JOB = """Experience using Python for custom evaluations and SQL or LogQL/PromQL for
+querying telemetry, logs, and metrics data.
+
+Broader work or accountabilities may be assigned as needed.
+
+Take measured risks while protecting the bank by applying our Risk Management
+Framework, in line with our Risk Culture and within our approved Risk Appetite."""
+
+
+def test_labels_are_removed_from_names():
+    ai_said = [
+        Requirement(name="Microsoft Azure administration experience (must-have)", importance="must-have"),
+        Requirement(name="Enterprise networking knowledge (not required)", importance="not required"),
+    ]
+    fixed = apply_text_rules(ai_said, NIAGARA_JOB)
+    assert [(r.name, r.importance) for r in fixed] == [
+        ("Microsoft Azure administration experience", "must-have"),
+        ("Enterprise networking knowledge", "must-have"),  # no proof it's not needed
+    ]
+
+
+def test_requirement_the_posting_never_mentions_is_dropped():
+    # "hands-on technical leadership" is in the posting; "coding" is not
+    ai_said = [Requirement(name="hands-on coding", importance="must-have")]
+    assert apply_text_rules(ai_said, NIAGARA_JOB) == []
+
+
+def test_long_names_match_the_resume():
+    resume = "Ran COB's internet-facing component on Microsoft Azure with Splunk"
+    assert mentions(resume, "Microsoft Azure administration experience")
+    assert mentions("Wrote SQL reports", "SQL or LogQL/PromQL querying experience")
+    assert mentions("Python (FastAPI, pytest)", "Python programming skills")
+
+
+def test_boilerplate_is_not_a_red_flag():
+    flags = [
+        RedFlag(concern="Unclear scope", quote="Broader work or accountabilities may be assigned as needed."),
+        RedFlag(concern="Risk", quote="applying our Risk Management Framework"),
+    ]
+    assert quoted_flags(flags, BMO_JOB) == []
+
+
+# --- Bullets that borrow claims from the job (Ashby, BMO) -------------------------------
+
+SKILLS_LINE = "- AI: Local LLMs (Ollama / Llama 3.2), Claude API, GPT-4, Pydantic structured outputs, Make.com"
+LAB_LINE = "- self-healing-lab: Prometheus alerts and Alertmanager trigger a Python remediator that restarts the failed container; Grafana shows each recovery"
+
+
+def test_ashby_bullet_borrowed_talent_acquisition():
+    bullet = (
+        "Developed and maintained AI-powered tooling for Talent Acquisition software, "
+        "utilizing Claude API, GPT-4, Pydantic structured outputs, and Make.com."
+    )
+    job = "We build Talent Acquisition software with AI-powered tooling."
+    warnings = bullet_warnings(bullet, RESUME + "\n" + SKILLS_LINE, [], line=SKILLS_LINE, job_text=job)
+    assert any('"talent"' in w and '"acquisition"' in w for w in warnings)
+
+
+def test_bmo_bullet_borrowed_ai_model_performance():
+    bullet = (
+        "Built a Docker Compose self-healing lab with Prometheus, Alertmanager, and "
+        "Grafana to monitor and troubleshoot AI model performance."
+    )
+    job = "Track model drift, latency spikes and error rates across production pipelines."
+    warnings = bullet_warnings(bullet, RESUME + "\n" + LAB_LINE, [], line=LAB_LINE, job_text=job)
+    assert any('"model"' in w for w in warnings)
+
+
+def fake_ideas(*ideas):
+    """A fake ask() that answers with these (text, line number) bullet ideas."""
+    import bullets
+
+    def fake_ask(prompt, shape, temperature=0):
+        return bullets.Bullets(bullets=[bullets.BulletIdea(text=t, line=n) for t, n in ideas])
+
+    return fake_ask
+
+
+def test_bullet_unlike_its_source_line_is_dropped(monkeypatch):
+    import bullets
+
+    monkeypatch.setattr(bullets, "ask", fake_ideas(
+        # line 4 is the audit findings line: this bullet shares almost nothing with it
+        ("Created and led training sessions on observability tools to improve monitoring", 4),
+        # line 99 doesn't exist
+        ("Converted 200 manual runbooks into automated remediation for the whole team", 99),
+        # a real one: line 2 is the runbooks line
+        ("Converted 200 manual runbooks into automated remediation, cutting after-hours effort by 35%", 2),
+    ))
+    found = bullets.suggest_bullets("any job", RESUME)
+    assert [s.text[:30] for s in found] == ["Converted 200 manual runbooks "]
+    assert found[0].source.startswith("Converted 200 manual runbooks")
+
+
+# --- Token counts --------------------------------------------------------------------
+
+
+class FakeResponse:
+    """Looks like an Ollama answer: JSON text plus the counts Ollama reports."""
+
+    def __init__(self, content, prompt_tokens, output_tokens, nanoseconds):
+        self.message = type("Message", (), {"content": content})()
+        self.done_reason = "stop"
+        self.prompt_eval_count = prompt_tokens
+        self.eval_count = output_tokens
+        self.total_duration = nanoseconds
+
+
+def test_every_ai_call_records_its_tokens(monkeypatch):
+    import ai
+
+    monkeypatch.setattr(ai, "usage_log", [])  # an empty log just for this test
+    answer = FakeResponse('{"bullets": []}', 1200, 80, 2_500_000_000)
+    monkeypatch.setattr(ai.client, "chat", lambda **kwargs: answer)
+    import bullets
+
+    ai.ask("prompt", bullets.Bullets)
+    assert ai.usage_log == [ai.Usage("Bullets", 1200, 80, 2.5, 1)]
+
+
+def test_decode_adds_up_this_runs_tokens(monkeypatch):
+    import ai
+
+    def fake_extract(job_text):
+        # pretend two AI calls happened while reading the job
+        ai.usage_log.append(ai.Usage("JobInsights", 3000, 400, 20.0, 1))
+        ai.usage_log.append(ai.Usage("JobInsights", 3000, 350, 18.5, 2))
+        return JobInsights(role_title="SRE", seniority="senior", requirements=[], red_flags=[])
+
+    monkeypatch.setattr(ai, "usage_log", [ai.Usage("old run", 9, 9, 9.0, 1)])
+    monkeypatch.setattr(decoder, "extract", fake_extract)
+    decoded = decoder.decode("any job")  # no resume: stops after reading the job
+    assert decoded.tokens() == {
+        "calls": 2,
+        "prompt_tokens": 6000,
+        "output_tokens": 750,
+        "seconds": 38.5,
+    }

@@ -12,18 +12,53 @@ ALIASES = {
 
 # Words that describe a skill without identifying it: "Monitoring Tools" is really "monitoring"
 FILLER = {
+    "a",
+    "ability",
+    "administration",
+    "and",
+    "background",
     "best",
     "concepts",
+    "enablement",
+    "execution",
     "experience",
+    "expertise",
+    "familiarity",
     "focus",
+    "for",
+    "hands",
+    "in",
     "it",
     "knowledge",
     "management",
+    "of",
+    "on",
+    "or",
     "practices",
+    "proficiency",
+    "programming",
+    "querying",
     "skills",
+    "strategy",
+    "the",
     "tool",
     "tools",
+    "understanding",
+    "with",
 }
+
+
+# Word endings to ignore when comparing words, longest first
+ENDINGS = ["ions", "ing", "ion", "ers", "er", "es", "ed", "s", "e"]
+
+
+def stem(word: str) -> str:
+    """A rough word root: "hiring" and "hire" -> "hir", "coaching" -> "coach"."""
+    for ending in ENDINGS:
+        if word.endswith(ending) and len(word) - len(ending) >= 3:
+            word = word[: -len(ending)]
+            break  # remove one ending only
+    return word[:5]  # first 5 letters: "monitoring" and "monitor" both -> "monit"
 
 
 def skill_pattern(skill: str) -> str:
@@ -37,6 +72,10 @@ def skill_pattern(skill: str) -> str:
 
 def mentions(text: str, skill: str) -> bool:
     """True if the text mentions the skill as a whole word, in any letter case."""
+    # "SQL or PromQL querying": showing either one counts
+    parts = re.split(r"\s+or\s+", skill, flags=re.IGNORECASE)
+    if len(parts) > 1:
+        return any(mentions(text, part) for part in parts)
     # The skill itself, plus its aliases (.get gives [] if the skill has none).
     # skill.lower() finds the aliases whether the skill is written "Leadership" or "leadership".
     names = [skill] + ALIASES.get(skill.lower(), [])

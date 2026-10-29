@@ -1,5 +1,8 @@
 # ai.py - the one place HireOps talks to the local AI model, with safety limits
+import json
+import logging
 import os
+from dataclasses import asdict, dataclass
 
 import httpx  # the web library ollama uses under the hood; we need its error types
 import ollama
@@ -18,6 +21,39 @@ CONTEXT = 8192
 
 # A Client is a connection to Ollama; without timeout= it would wait forever
 client = ollama.Client(timeout=TIMEOUT)
+
+logger = logging.getLogger(__name__)
+
+
+# What one model call cost: Ollama reports these numbers with every answer
+@dataclass
+class Usage:
+    step: str  # which question this was, e.g. "JobInsights"
+    prompt_tokens: int  # word-pieces the model read (your prompt)
+    output_tokens: int  # word-pieces the model wrote (its answer)
+    seconds: float  # how long the call took
+    attempt: int  # 1 = first try, 2 = the retry
+
+
+# Every call is added here, in order. decode() reads the new entries after a run.
+usage_log: list[Usage] = []
+
+
+def record_usage(step, response, attempt):
+    """Save the token counts and time of one answer, and write them to the log."""
+    # getattr(..., 0) gives 0 if a field is missing; "or 0" also turns None into 0
+    usage = Usage(
+        step=step,
+        prompt_tokens=getattr(response, "prompt_eval_count", 0) or 0,
+        output_tokens=getattr(response, "eval_count", 0) or 0,
+        # total_duration is in nanoseconds (billionths of a second)
+        seconds=round((getattr(response, "total_duration", 0) or 0) / 1e9, 2),
+        attempt=attempt,
+    )
+    usage_log.append(usage)
+    # One JSON line per call: easy to search, and Log Analytics can chart it
+    logger.info("ai_usage %s", json.dumps({"model": MODEL, **asdict(usage)}))
+    return usage
 
 
 class AIError(Exception):
@@ -47,6 +83,7 @@ def ask(prompt: str, shape: type[BaseModel], temperature: float = 0):
             )
         except httpx.TimeoutException:
             raise AIError(f"{MODEL} took longer than {TIMEOUT} seconds") from None
+        record_usage(shape.__name__, response, attempt + 1)  # retries cost tokens too
         # done_reason "length" means it hit MAX_TOKENS: the JSON is cut off, so retry
         if response.done_reason == "length":
             continue

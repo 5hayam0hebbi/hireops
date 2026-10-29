@@ -46,6 +46,12 @@ def show(decoded):
     """Show everything one decode found."""
     for note in decoded.notes:  # for example "Ollama isn't running..."
         st.info(note)
+    if decoded.usage:  # what the AI calls cost: tokens and time
+        t = decoded.tokens()
+        st.caption(
+            f"AI usage: {t['calls']} calls · {t['prompt_tokens']:,} tokens read · "
+            f"{t['output_tokens']:,} written · {t['seconds']} s"
+        )
     insights = decoded.insights
     if insights:
         st.subheader(f"{insights.role_title} ({insights.seniority})")
@@ -98,6 +104,8 @@ def show(decoded):
             )
         for bullet in decoded.bullets:
             st.markdown(f"- {bullet.text}")
+            if bullet.source:
+                st.caption(f'Based on your line: "{bullet.source}"')
             if bullet.invented:
                 st.warning(f"{', '.join(bullet.invented)} is not in your resume")
             for warning in bullet.warnings:

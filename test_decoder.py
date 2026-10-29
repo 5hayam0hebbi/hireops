@@ -1,5 +1,6 @@
 # test_decoder.py - checks for decoder.py, with a FAKE AI (tests never call Ollama)
 import decoder
+from bullets import Suggestion
 from extract import JobInsights, Requirement
 
 JOB = "We need Python, Kubernetes and Terraform. Strong incident management."
@@ -54,7 +55,9 @@ def test_full_run_with_a_fake_ai(monkeypatch):
     monkeypatch.setattr(
         decoder,
         "suggest_bullets",
-        lambda job, resume, focus: ["Automated 45 releases with Python across teams"],
+        lambda job, resume, focus: [
+            Suggestion("Automated 45 releases with Python across teams", "Wrote Python")
+        ],
     )
     messages = []  # the progress function below collects each message here
     decoded = decoder.decode(JOB, RESUME, progress=messages.append)
