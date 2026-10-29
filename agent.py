@@ -38,6 +38,7 @@ Use the tools to reach the goal. Rules:
 - If a tool returns an error, fix your request or explain the problem.
 - Call ONE tool per turn and wait for its result. Never guess a job ID.
 - Scores come only from score_job (0-100). Never write a score yourself.
+- Call list_shortlist to see jobs the person already saved. Don't suggest or save those again.
 - Finish in under 150 words: for each job, its ID, title, company, score and one reason."""
 
 
@@ -88,6 +89,10 @@ SPECS = {
         SaveJob,
         "Save one job to the person's shortlist. The person must say yes first.",
     ),
+    "list_shortlist": (
+        NoArgs,
+        "The jobs the person has already saved to their shortlist.",
+    ),
 }
 
 
@@ -123,6 +128,9 @@ class Tools:
         self.shortlist_file = shortlist_file
         # Every job a tool has returned, by ID. These are the only facts the agent has.
         self.jobs = {}
+        # IDs list_shortlist returned. Kept apart from self.jobs: saved jobs have no
+        # description, so read_job and score_job can't use them.
+        self.saved_ids = set()
 
     def list_companies(self, args):
         return [company["name"] for company in self.config["companies"]]
@@ -134,8 +142,13 @@ class Tools:
             (c for c in self.config["companies"] if c["name"].lower() == wanted), None
         )
         if company is None:
+            # The real names and a next step go inside the error: this small model
+            # follows a hint in a tool result better than a rule in the prompt
+            names = ", ".join(self.list_companies(args))
             raise ToolError(
-                f"No company called {args.company!r}. Call list_companies for the names."
+                f"No company called {args.company!r}. The person's companies are: "
+                f"{names}. Don't call find_jobs for it again. "
+                "Tell the person it isn't on their list."
             )
         fetch = FETCHERS[company["board"]]
         found = fetch(company["name"], company["slug"])
@@ -202,6 +215,16 @@ class Tools:
             json.dump(shortlist, f, indent=2)
         return {"saved": True}
 
+    def list_shortlist(self, args):
+        # Read-only: it never writes, so it doesn't need approve()
+        saved = load_shortlist(self.shortlist_file)
+        self.saved_ids.update(job["id"] for job in saved)
+        # Only the short fields, so a long shortlist isn't cut off
+        return [
+            {"id": j["id"], "company": j["company"], "title": j["title"]}
+            for j in saved
+        ]
+
 
 def load_shortlist(path):
     """Jobs saved so far; an empty list before the first save."""
@@ -248,7 +271,7 @@ def check_answer(answer, tools):
     return [
         f"The answer mentions {job_id}, which no tool returned. Don't trust that line."
         for job_id in sorted(set(JOB_ID.findall(answer)))
-        if job_id not in tools.jobs
+        if job_id not in tools.jobs and job_id not in tools.saved_ids
     ]
 
 # A score written in the answer, like "Score: 92" or "score 8/10"

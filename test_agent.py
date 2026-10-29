@@ -111,7 +111,8 @@ def test_unknown_company(monkeypatch, tmp_path):
         [reply(calls=[call("find_jobs", company="Acme")]), reply("No.")]
     )
     agent.run_agent("Jobs at Acme", tools, client=client)
-    assert "Call list_companies" in client.tool_results[0]
+    assert "The person's companies are: Datadog." in client.tool_results[0]
+    assert "Don't call find_jobs for it again" in client.tool_results[0]
 
 
 def test_score_uses_rules_not_ai(monkeypatch, tmp_path):
@@ -277,3 +278,33 @@ def test_a_typed_tool_call_is_sent_back(monkeypatch, tmp_path):
     run = agent.run_agent("Which companies can you search?", tools, client=client)
     assert run.corrections == 1
     assert run.answer == "I can search one company: Datadog."
+
+
+def test_list_shortlist_reads_saved_jobs(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    ask = [reply(calls=[call("list_shortlist")]), reply("Done.")]
+    # No shortlist.json in tmp_path yet: an empty list, not an error
+    client = FakeClient(ask)
+    agent.run_agent("What have I saved?", tools, client=client)
+    assert json.loads(client.tool_results[0]) == []
+    # Now a shortlist with one job in it
+    saved = [{**JOB, "id": "greenhouse-5", "reason": "Good fit"}]
+    (tmp_path / "shortlist.json").write_text(json.dumps(saved))
+    client = FakeClient(ask)
+    agent.run_agent("What have I saved?", tools, client=client)
+    assert [job["id"] for job in json.loads(client.tool_results[0])] == ["greenhouse-5"]
+
+
+def test_saved_job_id_is_not_flagged(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    saved = [{**JOB, "id": "greenhouse-5", "reason": "Good fit"}]
+    (tmp_path / "shortlist.json").write_text(json.dumps(saved))
+    client = FakeClient(
+        [
+            reply(calls=[call("list_shortlist")]),
+            reply("You already saved greenhouse-5."),
+        ]
+    )
+    run = agent.run_agent("What have I saved?", tools, client=client)
+    assert run.warnings == []  # the ID came from list_shortlist, so it's real
+    assert "greenhouse-5" not in tools.jobs  # but read_job and score_job can't use it
