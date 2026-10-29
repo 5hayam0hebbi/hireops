@@ -132,8 +132,18 @@ class Tools:
         # description, so read_job and score_job can't use them.
         self.saved_ids = set()
 
-    def list_companies(self, args):
+    def company_names(self):
+        """The target company names, for list_companies and find_jobs' error."""
         return [company["name"] for company in self.config["companies"]]
+
+    def list_companies(self, args):
+        # A next step inside the result, like find_jobs: without it the model
+        # sometimes answers with a tool name instead of these names. It doesn't
+        # mention find_jobs: that sent off-topic questions to a job search.
+        return {
+            "companies": self.company_names(),
+            "next": "Answer the person with these names.",
+        }
 
     def find_jobs(self, args):
         # next(...) gives the first company with that name, or None if there's none
@@ -144,7 +154,7 @@ class Tools:
         if company is None:
             # The real names and a next step go inside the error: this small model
             # follows a hint in a tool result better than a rule in the prompt
-            names = ", ".join(self.list_companies(args))
+            names = ", ".join(self.company_names())
             raise ToolError(
                 f"No company called {args.company!r}. The person's companies are: "
                 f"{names}. Don't call find_jobs for it again. "
@@ -162,7 +172,11 @@ class Tools:
             for j in fits[:15]
         ]
         # A next step inside the result: small models follow this better than the prompt
-        return {"jobs": jobs, "next": "To score a job, call score_job with its id."}
+        return {
+            "jobs": jobs,
+            "next": "To score a job, call score_job with its id. "
+            "To skip jobs the person already saved, call list_shortlist.",
+        }
 
     def job(self, job_id):
         """The job with this ID, if a tool returned it earlier in this run."""

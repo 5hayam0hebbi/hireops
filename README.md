@@ -61,30 +61,68 @@ Your resume and job files never leave your computer. The samples in this repo ar
 
 ### Tests
 
-`pytest -v` runs 80 tests with no AI needed (the AI's answers are faked). `test_real_jobs.py` holds regression tests from real job postings: each mistake HireOps made on a real job became a test, so it can't come back. GitHub Actions runs Ruff and the tests on every push.
+`pytest -v` runs 107 tests across all the tools with no AI needed (the AI's answers are faked). `test_real_jobs.py` holds regression tests from real job postings: each mistake HireOps made on a real job became a test, so it can't come back. GitHub Actions runs Ruff and the tests on every push.
 
 ### Limitations
 
 - A small local model can be slow (each AI step takes about 10 to 60 seconds on a laptop) and sometimes gives weak bullets; run it again or try a bigger model.
 - A skill written very differently in your resume can show as missing; check the "Possibly shown in other words" list.
-- For now you save the job posting as a text file; the web app will add job links and resume uploads.
+- The command line takes the job posting as a text file; the web app also reads job links and uploaded resumes.
 
 ## Tool 2: Job Radar (v0.2.0)
 
 ![Job Radar output on the sample resume](docs/job-radar.png)
 
-Every weekday morning, Job Radar checks the public job boards of the companies you choose (Greenhouse and Lever, no login needed), keeps only the roles that match your titles and places, scores each one against your resume with JD Decoder's rules, and shows only what's new since the last run. It also reads the LinkedIn and Indeed job-alert emails you save, so those roles land in the same list.
+Every weekday morning, Job Radar checks the public job boards of the companies you choose (Greenhouse, Lever and Ashby, no login needed), keeps only the roles that match your titles and places, scores each one against your resume with JD Decoder's rules, and shows only what's new since the last run. It also reads the LinkedIn and Indeed job-alert emails you save, so those roles land in the same list.
 
     python radar.py --resume private/resume.md
 
-- Edit `radar_config.json`: your companies (`board` is `greenhouse` or `lever`; `slug` is the company's name in the board's web address), the titles and places you want, and words to exclude.
+- Edit `radar_config.json`: your companies (`board` is `greenhouse`, `lever` or `ashby`; `slug` is the company's name in the board's web address), the titles and places you want, and words to exclude.
 - `--all` shows every match, not only new ones.
 - **Alert emails:** in Gmail, open a LinkedIn or Indeed job alert → ⋮ → **Download message**, and move the `.eml` file into `private/alerts/`. `--alerts <folder>` reads another folder (try `--alerts samples/alerts`). Alert jobs are checked by title only, because the email has no job text.
 - Each run saves a Markdown digest in `digests/`. Your digests, `seen.json`, saved emails and resume stay on your computer (they're in `.gitignore`).
 - **Runs by itself:** `.github/workflows/radar.yml` runs Job Radar on GitHub every weekday at 11:30 UTC with the fictional sample resume. Open **Actions → Job Radar daily** to read the digest, or click **Run workflow** to run it now.
 - Banks on Workday career sites have no public API: use their own email job alerts. Job Radar never scrapes websites or LinkedIn, and it never applies for you.
 
-Coming next: the HireOps web app. Paste a job link or the job text, upload your resume (PDF, Word or text), and click Decode, all on your own laptop.
+## Tool 3: Job Scout (AI agent)
+
+Job Scout is an AI agent on the local model. Give it a goal in plain English; it
+chooses HireOps tools (list companies, find jobs, read a job, score it against your
+resume, save it to a shortlist), runs them one at a time, and answers.
+
+```bash
+python agent.py "Find SRE or platform roles at Datadog and score the top 3"
+```
+
+Guardrails, enforced in code (the model can't skip them):
+- Only the tools listed in `SPECS`; every argument is checked against a Pydantic schema
+- One tool per turn, so the model can't use job IDs it hasn't seen yet
+- At most 8 steps and 30,000 tokens per run
+- Nothing is saved without your yes in the terminal
+- The final answer is checked before it's accepted: a made-up score, a promised
+  call that was never made, or a tool call typed as text is sent back to the model
+  (at most twice), then flagged
+- A job ID in the answer that no tool returned is flagged as invented
+- Every tool call is logged as a JSON line in `hireops.log`
+
+Quality:
+- `test_agent.py`: 22 tests with a scripted fake model prove each guardrail, and
+  `test_eval_agent.py` (5 tests) checks the eval itself (all run in CI)
+- `eval_agent.py`: grades the real model on 7 goals in `evals/agent_cases.json`,
+  counting only tool calls that worked and checking key facts in each answer, with a
+  sample shortlist so results never depend on private data. llama3.2: 5 of 7, and
+  every failure is caught, not hidden (in the latest run: claiming "roles you haven't
+  saved" without checking the shortlist, and searching jobs for an off-topic question).
+  Results are in `evals/`.
+
+Built with an agentic workflow: `CLAUDE.md` gives coding agents the repo map and
+rules (plan first, small changes with tests, a human reviews every diff).
+
+## Web app
+
+    streamlit run app.py
+
+Opens HireOps in your browser. On the JD Decoder page, paste a job link (Greenhouse, Lever or Ashby) or the job text, upload your resume (PDF, Word or text), and click Decode. Everything runs on your own laptop.
 
 ## Run it in Docker
 

@@ -78,6 +78,8 @@ def test_uses_a_tool_then_answers(monkeypatch, tmp_path):
     assert [s["tool"] for s in run.steps] == ["find_jobs"]
     assert "greenhouse-2" not in tools.jobs  # the intern job was filtered out
     assert run.warnings == [] and run.stopped == ""
+    # The result points the model at list_shortlist, to skip jobs already saved
+    assert "call list_shortlist" in json.loads(client.tool_results[0])["next"]
 
 
 def test_unknown_tool_is_refused(monkeypatch, tmp_path):
@@ -322,3 +324,12 @@ def test_a_bare_tool_name_is_sent_back(monkeypatch, tmp_path):
     run = agent.run_agent("Which companies can you search?", tools, client=client)
     assert run.corrections == 1
     assert run.answer == "I can search one company: Datadog."
+
+
+def test_list_companies_gives_names_and_a_next_step(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient([reply(calls=[call("list_companies")]), reply("Datadog.")])
+    agent.run_agent("Which companies can you search?", tools, client=client)
+    result = json.loads(client.tool_results[0])
+    assert result["companies"] == ["Datadog"]
+    assert "Answer the person with these names" in result["next"]
