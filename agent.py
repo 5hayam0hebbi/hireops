@@ -172,11 +172,7 @@ class Tools:
             for j in fits[:15]
         ]
         # A next step inside the result: small models follow this better than the prompt
-        return {
-            "jobs": jobs,
-            "next": "To score a job, call score_job with its id. "
-            "To skip jobs the person already saved, call list_shortlist.",
-        }
+        return {"jobs": jobs, "next": "To score a job, call score_job with its id."}
 
     def job(self, job_id):
         """The job with this ID, if a tool returned it earlier in this run."""
@@ -288,8 +284,11 @@ def check_answer(answer, tools):
         if job_id not in tools.jobs and job_id not in tools.saved_ids
     ]
 
-# A score written in the answer, like "Score: 92" or "score 8/10"
-SCORE = re.compile(r"\bscore\b\D{0,3}\d", re.IGNORECASE)
+# A score written in the answer, like "Score: 92", "score 8/10" or
+# "The score for the selected job is 92". [^.\n\d]{0,60} allows up to 60 characters
+# between the word and the number, but never a period or a new line, so the check
+# stays inside one sentence or list line.
+SCORE = re.compile(r"\bscored?\b[^.\n\d]{0,60}\d", re.IGNORECASE)
 MAX_CORRECTIONS = 2  # most times one run may send an answer back to the model
 # "I'll call score_job", "Let me use find_jobs"...: a promise to call, not a call.
 # Plain mentions ("Call list_companies for the names") don't count.
@@ -317,7 +316,8 @@ def answer_problem(answer, run):
         s["tool"] == "score_job" and not s["result"].startswith("Error")
         for s in run.steps
     )
-    if SCORE.search(answer) and not scored:
+    # Job IDs have digits too ("scored greenhouse-123"), so take them out first
+    if SCORE.search(JOB_ID.sub("", answer)) and not scored:
         return (
             "Your answer shows scores, but you never called score_job. "
             "Call score_job for each job ID you mention, then answer again."

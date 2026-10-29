@@ -78,8 +78,6 @@ def test_uses_a_tool_then_answers(monkeypatch, tmp_path):
     assert [s["tool"] for s in run.steps] == ["find_jobs"]
     assert "greenhouse-2" not in tools.jobs  # the intern job was filtered out
     assert run.warnings == [] and run.stopped == ""
-    # The result points the model at list_shortlist, to skip jobs already saved
-    assert "call list_shortlist" in json.loads(client.tool_results[0])["next"]
 
 
 def test_unknown_tool_is_refused(monkeypatch, tmp_path):
@@ -333,3 +331,31 @@ def test_list_companies_gives_names_and_a_next_step(monkeypatch, tmp_path):
     result = json.loads(client.tool_results[0])
     assert result["companies"] == ["Datadog"]
     assert "Answer the person with these names" in result["next"]
+
+
+def test_a_far_away_made_up_score_is_sent_back(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("find_jobs", company="Datadog")]),
+            # made up: the number is far from "score", and score_job never ran
+            reply("The score for Senior SRE (greenhouse-1) is 92."),
+            reply(calls=[call("score_job", job_id="greenhouse-1")]),
+            reply("greenhouse-1 Senior SRE, Score: 67"),
+        ]
+    )
+    run = agent.run_agent("Score the best Datadog job", tools, client=client)
+    assert run.corrections == 1
+    assert run.answer.endswith("Score: 67") and run.warnings == []
+
+
+def test_a_job_id_is_not_a_score(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("find_jobs", company="Datadog")]),
+            reply("I haven't scored greenhouse-1 yet."),  # the digits are the ID's
+        ]
+    )
+    run = agent.run_agent("Find Datadog jobs", tools, client=client)
+    assert run.corrections == 0 and run.warnings == []
