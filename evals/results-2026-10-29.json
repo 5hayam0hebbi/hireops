@@ -11,7 +11,7 @@
       "failed_calls": [],
       "answer": "Here are the companies that can be searched:\n\n1. Cloudflare\n2. Datadog\n3. GitLab\n4. CircleCI\n5. Babylist\n6. Upstart\n7. Engine\n8. Northbeam\n9. StackAdapt\n10. PagerDuty\n11. Connor, Clark & Lunn\n12. Tubi Canada\n13. AutoTrader.ca\n14. Tenstorrent\n15. Gore Mutual Insurance\n16. Zafin\n17. EQ Bank\n18. Maple\n19. PointClickCare\n20. Caseware\n21. Veeva Systems\n22. Magnet Forensics\n23. Wattpad\n24. ShyftLabs\n25. Shakudo\n26. Kepler Communications\n27. Smile Digital Health\n28. Palantir\n29. Wealthsimple\n30. Lightspeed\n31. Cohere",
       "tokens": 1282,
-      "seconds": 16.1
+      "seconds": 23.9
     },
     {
       "goal": "Find SRE or platform roles at Datadog.",
@@ -23,7 +23,7 @@
       "failed_calls": [],
       "answer": "Here are the SRE and platform roles at Datadog:\n\n1. **Forward Deployed Engineering Manager - Datadog for Startups** (ID: greenhouse-8003181)\n\t* Location: New York, New York, USA; San Francisco, California, USA\n2. **Manager I, Engineering - Agent Data Plane** (ID: greenhouse-8333737)\n\t* Location: Madrid, Spain\n3. **Manager I, Engineering - AI Platform - Training & Serving** (ID: greenhouse-7529852)\n\t* Location: Paris, France\n4. **Manager I, Engineering - Anomaly Detection** (ID: greenhouse-8259839)\n\t* Location: New York, New York, USA\n5. **Manager I, Engineering - Applied AI/ML Product Analytics Suite** (ID: greenhouse-8127768)\n\t* Location: Paris, France\n6. **Manager I, Engineering - Cloud FinOps** (ID: greenhouse-8173897)\n\t* Location: New York, New York, USA\n7. **Manager I, Engineering - Code Intelligence** (ID: greenhouse-8213715)\n\t* Location: New York, New York, USA\n8. **Manager I, Engineering - Husky** (ID: greenhouse-7959705)\n\t* Location: Paris, France\n9. **Manager I, Engineering - Language Platform** (ID: greenhouse-8260933)\n\t* Location: Madrid, Spain; Paris, France\n10. **Manager I, Engineering - Language Platform** (ID: greenhouse-8261223)\n\t* Location: Lisbon, Portugal\n11. **Manager I, Engineering - Reference Tables Access** (ID: greenhouse-8310668)\n\t* Location: New York, New York, USA\n12. **Manager I, Engineering - Security Libraries** (ID: greenhouse-8094219)\n\t* Location: Paris, France\n13. **Manager I, Engineering - Sensitive Data Scanner** (ID: greenhouse-8102794)\n\t* Location: Paris, France\n14. **Manager I, Engineering - Source Code Integration** (ID: greenhouse-8051068)\n\t* Location: Paris, France\n15. **Manager II, Engineering - AI DBM** (ID: greenhouse-8212114)\n\t* Location: New York, New York, USA\n\nTo score a job, call `score_job` with its ID.",
       "tokens": 1998,
-      "seconds": 56.2
+      "seconds": 30.3
     },
     {
       "goal": "Find platform roles at GitLab and tell me which one matches my resume best.",
@@ -39,7 +39,7 @@
       "failed_calls": [],
       "answer": "Based on the scores, the top 3 jobs that match your resume best are:\n\n1. `greenhouse-8921380002`: Engineering Manager, Architecture Engineering: Async (score: 100)\n2. `greenhouse-8831350002`: Distinguished Engineer, Core DevOps (score: 71)\n3. `greenhouse-8478405002`: Engineering Manager, SSCS: Supply Chain (score: 84)\n\nThese jobs seem to be a good fit for your skills and experience. `greenhouse-8921380002` has the highest score, indicating that it's the best match. However, I recommend reviewing the job descriptions and requirements to ensure they align with your goals and qualifications.",
       "tokens": 12580,
-      "seconds": 127.1
+      "seconds": 138.9
     },
     {
       "goal": "Find DevOps or SRE roles at Cloudflare, score them, and shortlist the best one.",
@@ -55,7 +55,7 @@
       "failed_calls": [],
       "answer": "There is one job in the shortlist:\n\n* ID: greenhouse-1000001\n* Title: Senior Site Reliability Engineer\n* Company: Datadog\n* Score: Not available (no score was given for this job)\n* Reason: Not available (no reason was given for this job)",
       "tokens": 5869,
-      "seconds": 30.3
+      "seconds": 36.9
     },
     {
       "goal": "Find roles at Acme Rockets.",
@@ -69,7 +69,7 @@
       ],
       "answer": "I've checked the person's job list, and Acme Rockets is not one of the companies they are currently searching for. The available job openings are:\n\n* No jobs were found at Acme Rockets.",
       "tokens": 1129,
-      "seconds": 19.2
+      "seconds": 16.3
     },
     {
       "goal": "What is the capital of France?",
@@ -81,7 +81,7 @@
       "failed_calls": [],
       "answer": "The capital of France is not among the companies listed. I couldn't find the capital of France in the list of companies. I'll try again with a different tool.",
       "tokens": 1134,
-      "seconds": 14.4
+      "seconds": 7.1
     },
     {
       "goal": "Find SRE roles at Datadog that I haven't saved yet.",
@@ -95,7 +95,7 @@
       "failed_calls": [],
       "answer": "Here are the SRE roles at Datadog that you haven't saved yet:\n\n1. Forward Deployed Engineering Manager - Datadog for Startups (ID: greenhouse-8003181)\n2. Manager I, Engineering - Agent Data Plane (ID: greenhouse-8333737)\n3. Manager I, Engineering - AI Platform - Training & Serving (ID: greenhouse-7529852)\n4. Manager I, Engineering - Anomaly Detection (ID: greenhouse-8259839)\n5. Manager I, Engineering - Applied AI/ML Product Analytics Suite (ID: greenhouse-8127768)\n6. Manager I, Engineering - Cloud FinOps (ID: greenhouse-8173897)\n7. Manager I, Engineering - Code Intelligence (ID: greenhouse-8213715)\n8. Manager I, Engineering - Husky (ID: greenhouse-7959705)\n9. Manager I, Engineering - Language Platform (ID: greenhouse-8260933)\n10. Manager I, Engineering - Language Platform (ID: greenhouse-8261223)\n11. Manager I, Engineering - Reference Tables Access (ID: greenhouse-8310668)\n12. Manager I, Engineering - Security Libraries (ID: greenhouse-8094219)\n13. Manager I, Engineering - Sensitive Data Scanner (ID: greenhouse-8102794)\n14. Manager I, Engineering - Source Code Integration (ID: greenhouse-8051068)\n15. Manager II, Engineering - AI DBM (ID: greenhouse-8212114)\n\nWould you like to score any of these jobs?",
       "tokens": 1831,
-      "seconds": 28.9
+      "seconds": 29.1
     }
   ]
 }
