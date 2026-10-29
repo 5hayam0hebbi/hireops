@@ -263,3 +263,17 @@ def test_a_plain_tool_mention_is_accepted(monkeypatch, tmp_path):
     )
     run = agent.run_agent("Find roles at Acme", tools, client=client)
     assert run.corrections == 0 and run.warnings == []
+
+
+def test_a_typed_tool_call_is_sent_back(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("list_companies")]),
+            reply('find_jobs(["Datadog"])'),  # a call typed as text, not a call
+            reply("I can search one company: Datadog."),
+        ]
+    )
+    run = agent.run_agent("Which companies can you search?", tools, client=client)
+    assert run.corrections == 1
+    assert run.answer == "I can search one company: Datadog."

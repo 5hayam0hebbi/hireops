@@ -261,6 +261,10 @@ ANNOUNCED = re.compile(
     r"\b(" + "|".join(SPECS) + r")\b",
     re.IGNORECASE,
 )
+# A tool call typed as text, like find_jobs(["Datadog"]) or {"name": "find_jobs", ...}
+TYPED_CALL = re.compile(
+    r"\b(?:" + "|".join(SPECS) + r")\s*\(|\"name\":\s*\"(?:" + "|".join(SPECS) + r")\""
+)
 
 
 def answer_problem(answer, run):
@@ -277,6 +281,12 @@ def answer_problem(answer, run):
         return (
             "Your answer shows scores, but you never called score_job. "
             "Call score_job for each job ID you mention, then answer again."
+        )
+    # The model typed a tool call as text instead of sending it as a call
+    if TYPED_CALL.search(answer):
+        return (
+            "You typed a tool call as text. To use a tool, call it. "
+            "Otherwise answer the person in plain words."
         )
     # The model announced a call instead of making it ("First, I'll call score_job")
     announced = ANNOUNCED.search(answer)
