@@ -97,6 +97,22 @@ def grade(case, run):
     for s in run.steps:
         if "Unknown job ID" in s["result"]:
             problems.append(f"{s['tool']} tried a job ID no tool returned")
+    # Optional: "score them" means more than one. Count the different jobs it scored.
+    scored_ids = {
+        s.get("args", {}).get("job_id")
+        for s in run.steps
+        if s["tool"] == "score_job" and not s["result"].startswith("Error")
+    }
+    need = case.get("must_score_at_least", 0)
+    if len(scored_ids) < need:
+        problems.append(f"scored only {len(scored_ids)} job(s); the case needs {need}")
+    # Optional: the answer must name the job it asked to save, by its ID
+    if case.get("must_name_saved_job"):
+        for s in run.steps:
+            if s["tool"] == "save_job" and not s["result"].startswith("Error"):
+                job_id = s.get("args", {}).get("job_id", "")
+                if job_id not in run.answer:
+                    problems.append(f"answer doesn't name the saved job {job_id}")
     for warning in run.warnings:  # invented job IDs, answers not fixed in time
         problems.append(warning[:110])
     if run.stopped:

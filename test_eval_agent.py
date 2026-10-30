@@ -163,3 +163,27 @@ def test_sample_jobs_have_enough_to_compare():
         assert len(sample[company]) >= 2  # the top-score check needs two to compare
         for job in sample[company]:
             assert {"id", "title", "location", "description"} <= job.keys()
+
+def test_scoring_too_few_jobs_fails():
+    case = {**CASE, "must_score_at_least": 3}
+    run = scored_run([("greenhouse-1", 80)], "greenhouse-1")
+    assert eval_agent.grade(case, run) == ["scored only 1 job(s); the case needs 3"]
+
+
+def test_scoring_enough_jobs_passes():
+    case = {**CASE, "must_score_at_least": 3}
+    run = scored_run([("greenhouse-1", 80), ("greenhouse-2", 50), ("greenhouse-3", 40)], "greenhouse-1")
+    assert eval_agent.grade(case, run) == []
+
+
+def test_an_answer_that_skips_the_saved_job_fails():
+    case = {**CASE, "must_name_saved_job": True}
+    run = scored_run([("greenhouse-1", 80)], "greenhouse-1")  # its answer is "Done."
+    assert eval_agent.grade(case, run) == ["answer doesn't name the saved job greenhouse-1"]
+
+
+def test_an_answer_that_names_the_saved_job_passes():
+    case = {**CASE, "must_name_saved_job": True}
+    run = scored_run([("greenhouse-1", 80)], "greenhouse-1")
+    run.answer = "Shortlisted greenhouse-1, Senior SRE."
+    assert eval_agent.grade(case, run) == []

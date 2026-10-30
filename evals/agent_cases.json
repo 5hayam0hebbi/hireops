@@ -21,7 +21,9 @@
     "must_call": ["find_jobs", "score_job", "save_job"],
     "must_not_call": [],
     "must_call_in_order": ["find_jobs", "score_job", "save_job"],
-    "must_save_top_score": true
+    "must_save_top_score": true,
+    "must_score_at_least": 3,
+    "must_name_saved_job": true
   },
   {
     "goal": "Find roles at Acme Rockets.",

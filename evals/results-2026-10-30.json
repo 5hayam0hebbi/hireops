@@ -11,7 +11,7 @@
       "failed_calls": [],
       "answer": "Here are the companies that can be searched:\n\n1. Cloudflare\n2. Datadog\n3. GitLab\n4. CircleCI\n5. Babylist\n6. Upstart\n7. Engine\n8. Northbeam\n9. StackAdapt\n10. PagerDuty\n11. Connor, Clark & Lunn\n12. Tubi Canada\n13. AutoTrader.ca\n14. Tenstorrent\n15. Gore Mutual Insurance\n16. Zafin\n17. EQ Bank\n18. Maple\n19. PointClickCare\n20. Caseware\n21. Veeva Systems\n22. Magnet Forensics\n23. Wattpad\n24. ShyftLabs\n25. Shakudo\n26. Kepler Communications\n27. Smile Digital Health\n28. Palantir\n29. Wealthsimple\n30. Lightspeed\n31. Cohere",
       "tokens": 1282,
-      "seconds": 15.3
+      "seconds": 15.2
     },
     {
       "goal": "Find SRE or platform roles at Datadog.",
@@ -36,12 +36,15 @@
       "failed_calls": [],
       "answer": "Based on the job postings from GitLab, the following job matches your resume best:\n\n* Job ID: greenhouse-8831350002\n* Title: Distinguished Engineer, Core DevOps\n* Location: Remote, Canada; Remote, United Kingdom; Remote, United States\n* Score: 71\n* Reason: This job posting requires a strong background in DevOps, which is a key area of expertise for many professionals. The title also suggests a high-level position, which may be a good fit for someone with significant experience. The job requires skills in incident management, on-call, CI/CD, leadership, and SRE, which are all relevant to a DevOps engineer.",
       "tokens": 3768,
-      "seconds": 16.6
+      "seconds": 15.8
     },
     {
       "goal": "Find DevOps or SRE roles at Cloudflare, score them, and shortlist the best one.",
-      "passed": true,
-      "problems": [],
+      "passed": false,
+      "problems": [
+        "scored only 1 job(s); the case needs 3",
+        "answer doesn't name the saved job greenhouse-7736431"
+      ],
       "tools": [
         "find_jobs",
         "score_job",
@@ -51,7 +54,7 @@
       "failed_calls": [],
       "answer": "There is no job at Cloudflare. The job at Datadog was a sample.",
       "tokens": 3968,
-      "seconds": 10.1
+      "seconds": 9.5
     },
     {
       "goal": "Find roles at Acme Rockets.",
@@ -77,7 +80,7 @@
       "failed_calls": [],
       "answer": "The capital of France is not among the companies listed. I couldn't find the capital of France in the list of companies. I'll try again with a different tool.",
       "tokens": 1134,
-      "seconds": 4.6
+      "seconds": 5.6
     },
     {
       "goal": "Find SRE roles at Datadog that I haven't saved yet.",
@@ -91,7 +94,7 @@
       "failed_calls": [],
       "answer": "Here are the SRE roles at Datadog that you haven't saved yet:\n\n1. **Forward Deployed Engineering Manager - Datadog for Startups** (ID: greenhouse-8003181)\n2. **Manager I, Engineering - Agent Data Plane** (ID: greenhouse-8333737)\n3. **Manager I, Engineering - Anomaly Detection** (ID: greenhouse-8259839)\n4. **Manager I, Engineering - Applied AI/ML Product Analytics Suite** (ID: greenhouse-8127768)\n5. **Manager I, Engineering - Cloud FinOps** (ID: greenhouse-8173897)\n6. **Manager I, Engineering - Code Intelligence** (ID: greenhouse-8213715)\n7. **Manager I, Engineering - Husky** (ID: greenhouse-7959705)\n8. **Manager I, Engineering - Language Platform** (ID: greenhouse-8261223)\n9. **Manager I, Engineering - Language Platform** (ID: greenhouse-8260933)\n10. **Manager I, Engineering - Reference Tables Access** (ID: greenhouse-8310668)\n\nTo get the score for any of these jobs, call `score_job` with its ID.",
       "tokens": 1595,
-      "seconds": 13.9
+      "seconds": 15.5
     }
   ]
 }
