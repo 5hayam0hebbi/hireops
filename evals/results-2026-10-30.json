@@ -11,7 +11,7 @@
       "failed_calls": [],
       "answer": "Here are the companies that can be searched:\n\n1. Cloudflare\n2. Datadog\n3. GitLab\n4. CircleCI\n5. Babylist\n6. Upstart\n7. Engine\n8. Northbeam\n9. StackAdapt\n10. PagerDuty\n11. Connor, Clark & Lunn\n12. Tubi Canada\n13. AutoTrader.ca\n14. Tenstorrent\n15. Gore Mutual Insurance\n16. Zafin\n17. EQ Bank\n18. Maple\n19. PointClickCare\n20. Caseware\n21. Veeva Systems\n22. Magnet Forensics\n23. Wattpad\n24. ShyftLabs\n25. Shakudo\n26. Kepler Communications\n27. Smile Digital Health\n28. Palantir\n29. Wealthsimple\n30. Lightspeed\n31. Cohere",
       "tokens": 1282,
-      "seconds": 15.2
+      "seconds": 10.2
     },
     {
       "goal": "Find SRE or platform roles at Datadog.",
@@ -21,9 +21,9 @@
         "find_jobs"
       ],
       "failed_calls": [],
-      "answer": "Here are the SRE and platform roles at Datadog:\n\n1. **Forward Deployed Engineering Manager - Datadog for Startups** (greenhouse-8003181)\n\t* Location: New York, New York, USA; San Francisco, California, USA\n2. **Manager I, Engineering - Agent Data Plane** (greenhouse-8333737)\n\t* Location: Madrid, Spain\n3. **Manager I, Engineering - Anomaly Detection** (greenhouse-8259839)\n\t* Location: New York, New York, USA\n4. **Manager I, Engineering - Applied AI/ML Product Analytics Suite** (greenhouse-8127768)\n\t* Location: Paris, France\n5. **Manager I, Engineering - Cloud FinOps** (greenhouse-8173897)\n\t* Location: New York, New York, USA\n6. **Manager I, Engineering - Code Intelligence** (greenhouse-8213715)\n\t* Location: New York, New York, USA\n7. **Manager I, Engineering - Husky** (greenhouse-7959705)\n\t* Location: Paris, France\n8. **Manager I, Engineering - Language Platform** (greenhouse-8261223)\n\t* Location: Lisbon, Portugal\n9. **Manager I, Engineering - Language Platform** (greenhouse-8260933)\n\t* Location: Madrid, Spain; Paris, France\n10. **Manager I, Engineering - Reference Tables Access** (greenhouse-8310668)\n\t* Location: New York, New York, USA\n\nTo score these jobs, call `score_job` with their IDs.",
-      "tokens": 1669,
-      "seconds": 16.2
+      "answer": "Here are the SRE and platform roles at Datadog:\n\n1. **Forward Deployed Engineering Manager - Datadog for Startups** (greenhouse-8003181)\n\t* Location: New York, New York, USA; San Francisco, California, USA\n\t* Score: (to be determined)\n\t* Reason: This role involves managing a team of engineers to deploy and maintain Datadog's products for startups.\n2. **Manager I, Engineering - Agent Data Plane** (greenhouse-8333737)\n\t* Location: Madrid, Spain\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's agent data plane.\n3. **Manager I, Engineering - Anomaly Detection** (greenhouse-8259839)\n\t* Location: New York, New York, USA\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's anomaly detection capabilities.\n4. **Manager I, Engineering - Applied AI/ML Product Analytics Suite** (greenhouse-8127768)\n\t* Location: Paris, France\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's AI/ML product analytics suite.\n5. **Manager I, Engineering - Cloud FinOps** (greenhouse-8173897)\n\t* Location: New York, New York, USA\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's cloud financial operations capabilities.\n6. **Manager I, Engineering - Code Intelligence** (greenhouse-8213715)\n\t* Location: New York, New York, USA\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's code intelligence capabilities.\n7. **Manager I, Engineering - Husky** (greenhouse-7959705)\n\t* Location: Paris, France\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's Husky capabilities.\n8. **Manager I, Engineering - Language Platform** (greenhouse-8261223)\n\t* Location: Lisbon, Portugal\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's language platform capabilities.\n9. **Manager I, Engineering - Language Platform** (greenhouse-8260933)\n\t* Location: Madrid, Spain; Paris, France\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's language platform capabilities.\n10. **Manager I, Engineering - Reference Tables Access** (greenhouse-8310668)\n\t* Location: New York, New York, USA\n\t* Score: (to be determined)\n\t* Reason: This role involves managing the development and maintenance of Datadog's reference tables access capabilities.\n\nPlease call `score_job` for each ID to determine the score.",
+      "tokens": 1981,
+      "seconds": 27.7
     },
     {
       "goal": "Find platform roles at GitLab and tell me which one matches my resume best.",
@@ -34,27 +34,27 @@
         "score_job"
       ],
       "failed_calls": [],
-      "answer": "Based on the job postings from GitLab, the following job matches your resume best:\n\n* Job ID: greenhouse-8831350002\n* Title: Distinguished Engineer, Core DevOps\n* Location: Remote, Canada; Remote, United Kingdom; Remote, United States\n* Score: 71\n* Reason: This job posting requires a strong background in DevOps, which is a key area of expertise for many professionals. The title also suggests a high-level position, which may be a good fit for someone with significant experience. The job requires skills in incident management, on-call, CI/CD, leadership, and SRE, which are all relevant to a DevOps engineer.",
-      "tokens": 3768,
-      "seconds": 15.8
+      "answer": "The job that matches your resume best is the \"Cloud Platform Engineer\" at GitLab with ID greenhouse-8889193002. The score for this job is 50. The job requires skills such as Python, Azure, incident management, and CI/CD, which are present in your resume. However, it is missing skills like Kubernetes, Terraform, observability, and high availability.",
+      "tokens": 3436,
+      "seconds": 9.6
     },
     {
       "goal": "Find DevOps or SRE roles at Cloudflare, score them, and shortlist the best one.",
       "passed": false,
       "problems": [
-        "scored only 1 job(s); the case needs 3",
-        "answer doesn't name the saved job greenhouse-7736431"
+        "didn't call save_job successfully",
+        "scored only 2 job(s); the case needs 3",
+        "Not fixed after 2 tries: You said you would use score_job but didn't call it. Call it now, or give your final "
       ],
       "tools": [
         "find_jobs",
         "score_job",
-        "save_job",
-        "list_shortlist"
+        "score_job"
       ],
       "failed_calls": [],
-      "answer": "There is no job at Cloudflare. The job at Datadog was a sample.",
-      "tokens": 3968,
-      "seconds": 9.5
+      "answer": "I'll call score_job for the next job ID: greenhouse-8242481.",
+      "tokens": 5693,
+      "seconds": 12.8
     },
     {
       "goal": "Find roles at Acme Rockets.",
@@ -68,7 +68,7 @@
       ],
       "answer": "I've checked the person's job list, and Acme Rockets is not one of the companies they are currently searching for. The available job openings are:\n\n* No jobs were found at Acme Rockets.",
       "tokens": 1129,
-      "seconds": 3.5
+      "seconds": 3.3
     },
     {
       "goal": "What is the capital of France?",
@@ -80,7 +80,7 @@
       "failed_calls": [],
       "answer": "The capital of France is not among the companies listed. I couldn't find the capital of France in the list of companies. I'll try again with a different tool.",
       "tokens": 1134,
-      "seconds": 5.6
+      "seconds": 4.2
     },
     {
       "goal": "Find SRE roles at Datadog that I haven't saved yet.",
@@ -92,9 +92,9 @@
         "find_jobs"
       ],
       "failed_calls": [],
-      "answer": "Here are the SRE roles at Datadog that you haven't saved yet:\n\n1. **Forward Deployed Engineering Manager - Datadog for Startups** (ID: greenhouse-8003181)\n2. **Manager I, Engineering - Agent Data Plane** (ID: greenhouse-8333737)\n3. **Manager I, Engineering - Anomaly Detection** (ID: greenhouse-8259839)\n4. **Manager I, Engineering - Applied AI/ML Product Analytics Suite** (ID: greenhouse-8127768)\n5. **Manager I, Engineering - Cloud FinOps** (ID: greenhouse-8173897)\n6. **Manager I, Engineering - Code Intelligence** (ID: greenhouse-8213715)\n7. **Manager I, Engineering - Husky** (ID: greenhouse-7959705)\n8. **Manager I, Engineering - Language Platform** (ID: greenhouse-8261223)\n9. **Manager I, Engineering - Language Platform** (ID: greenhouse-8260933)\n10. **Manager I, Engineering - Reference Tables Access** (ID: greenhouse-8310668)\n\nTo get the score for any of these jobs, call `score_job` with its ID.",
-      "tokens": 1595,
-      "seconds": 15.5
+      "answer": "Here are the SRE roles at Datadog that you haven't saved yet:\n\n1. **Forward Deployed Engineering Manager - Datadog for Startups** (ID: greenhouse-8003181)\n2. **Manager I, Engineering - Agent Data Plane** (ID: greenhouse-8333737)\n3. **Manager I, Engineering - Anomaly Detection** (ID: greenhouse-8259839)\n4. **Manager I, Engineering - Applied AI/ML Product Analytics Suite** (ID: greenhouse-8127768)\n5. **Manager I, Engineering - Cloud FinOps** (ID: greenhouse-8173897)\n6. **Manager I, Engineering - Code Intelligence** (ID: greenhouse-8213715)\n7. **Manager I, Engineering - Husky** (ID: greenhouse-7959705)\n8. **Manager I, Engineering - Language Platform** (ID: greenhouse-8261223)\n9. **Manager I, Engineering - Language Platform** (ID: greenhouse-8260933)\n10. **Manager I, Engineering - Reference Tables Access** (ID: greenhouse-8310668)\n\nWould you like to score any of these jobs?",
+      "tokens": 1590,
+      "seconds": 11.1
     }
   ]
 }

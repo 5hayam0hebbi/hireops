@@ -176,7 +176,7 @@ class Tools:
             for j in fits[:15]
         ]
         # A next step inside the result: small models follow this better than the prompt
-        return {"jobs": jobs, "next": "To score a job, call score_job with its id."}
+        return {"jobs": jobs, "next": "To compare jobs, call score_job for each id, one at a time."}
 
     def job(self, job_id):
         """The job with this ID, if a tool returned it earlier in this run."""
