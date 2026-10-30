@@ -132,3 +132,21 @@ def test_must_save_top_score_skipped_when_no_scores():
     # already catches the missing score_job call)
     run = ran(("save_job", '{"saved": false}'))
     assert eval_agent.grade(SAVE_TOP_CASE, run) == []
+
+
+def test_must_save_top_score_reads_a_result_cut_at_200_characters():
+    # A real score_job result lists the skills it found, so it runs past the
+    # 200-character cut in run.steps and is no longer complete JSON
+    long_result = _json.dumps(
+        {"id": "greenhouse-1", "score": 80, "have": ["Kubernetes"] * 30, "missing": []}
+    )[:200]
+    run = scored_run([("greenhouse-2", 50)], "greenhouse-2")
+    run.steps.insert(
+        0,
+        {"step": 0, "tool": "score_job", "args": {"job_id": "greenhouse-1"},
+         "result": long_result},
+    )
+    problems = eval_agent.grade(SAVE_TOP_CASE, run)
+    assert problems == [
+        "saved greenhouse-2 (score 50) but greenhouse-1 had a higher score of 80"
+    ]

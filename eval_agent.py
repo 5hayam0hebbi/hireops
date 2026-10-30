@@ -3,6 +3,7 @@
 # model: does it pick the right tools, avoid the wrong ones, and never invent a job?
 # Run it after every change to the prompt, the tool descriptions or the model.
 import json
+import re
 import time
 from datetime import date
 from pathlib import Path
@@ -69,12 +70,11 @@ def grade(case, run):
         for s in run.steps:
             if s["tool"] == "score_job" and not s["result"].startswith("Error"):
                 job_id = s.get("args", {}).get("job_id")
-                try:
-                    score = json.loads(s["result"])["score"]
-                except (json.JSONDecodeError, KeyError):
-                    continue
-                if job_id:
-                    scores[job_id] = score
+                # Results are cut at 200 characters, so json.loads would fail on a
+                # long one. "score" comes right after "id", so it always survives.
+                found = re.search(r'"score": (\d+)', s["result"])
+                if job_id and found:
+                    scores[job_id] = int(found.group(1))
         saved_id = None
         for s in run.steps:
             if s["tool"] == "save_job" and not s["result"].startswith("Error"):
