@@ -88,3 +88,47 @@ def test_other_errors_dont_count_as_guesses():
     # Like the Acme Rockets case: telling the person a company isn't listed is right
     run = ran(("find_jobs", "Error: No company called 'Acme Rockets'."))
     assert eval_agent.grade(CASE, run) == []
+
+
+import json as _json
+
+SAVE_TOP_CASE = {**CASE, "must_save_top_score": True}
+
+
+def scored_run(scored, saved_id):
+    """A run where score_job was called for each (id, score) pair, then save_job saved saved_id."""
+    steps = []
+    for i, (job_id, score) in enumerate(scored, start=1):
+        steps.append({
+            "step": i,
+            "tool": "score_job",
+            "args": {"job_id": job_id},
+            "result": _json.dumps({"id": job_id, "score": score, "have": [], "missing": []}),
+        })
+    steps.append({
+        "step": len(scored) + 1,
+        "tool": "save_job",
+        "args": {"job_id": saved_id},
+        "result": '{"saved": false, "note": "The person said no."}',
+    })
+    return agent.Run(answer="Done.", steps=steps)
+
+
+def test_must_save_top_score_passes_when_best_is_saved():
+    run = scored_run([("greenhouse-1", 80), ("greenhouse-2", 50)], "greenhouse-1")
+    assert eval_agent.grade(SAVE_TOP_CASE, run) == []
+
+
+def test_must_save_top_score_fails_when_lower_scored_job_is_saved():
+    run = scored_run([("greenhouse-1", 80), ("greenhouse-2", 50)], "greenhouse-2")
+    problems = eval_agent.grade(SAVE_TOP_CASE, run)
+    assert problems == [
+        "saved greenhouse-2 (score 50) but greenhouse-1 had a higher score of 80"
+    ]
+
+
+def test_must_save_top_score_skipped_when_no_scores():
+    # If the model never successfully scored a job, this check is silent (must_call
+    # already catches the missing score_job call)
+    run = ran(("save_job", '{"saved": false}'))
+    assert eval_agent.grade(SAVE_TOP_CASE, run) == []

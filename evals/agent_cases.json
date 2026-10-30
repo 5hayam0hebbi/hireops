@@ -20,7 +20,8 @@
     "goal": "Find DevOps or SRE roles at Cloudflare, score them, and shortlist the best one.",
     "must_call": ["find_jobs", "score_job", "save_job"],
     "must_not_call": [],
-    "must_call_in_order": ["find_jobs", "score_job", "save_job"]
+    "must_call_in_order": ["find_jobs", "score_job", "save_job"],
+    "must_save_top_score": true
   },
   {
     "goal": "Find roles at Acme Rockets.",

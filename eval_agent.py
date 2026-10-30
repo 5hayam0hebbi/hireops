@@ -61,6 +61,32 @@ def grade(case, run):
     order = [first_ok[tool] for tool in wanted if tool in first_ok]
     if order != sorted(order):
         problems.append("tools ran out of order: " + " before ".join(wanted))
+    # Optional: the job passed to save_job must be the one with the highest score_job
+    # result. scores maps job_id -> score for every successful score_job call; saved_id
+    # is the first job the model tried to save (even if the person said no).
+    if case.get("must_save_top_score"):
+        scores = {}
+        for s in run.steps:
+            if s["tool"] == "score_job" and not s["result"].startswith("Error"):
+                job_id = s.get("args", {}).get("job_id")
+                try:
+                    score = json.loads(s["result"])["score"]
+                except (json.JSONDecodeError, KeyError):
+                    continue
+                if job_id:
+                    scores[job_id] = score
+        saved_id = None
+        for s in run.steps:
+            if s["tool"] == "save_job" and not s["result"].startswith("Error"):
+                saved_id = s.get("args", {}).get("job_id")
+                break
+        if scores and saved_id:
+            top_id = max(scores, key=lambda jid: scores[jid])
+            if scores.get(saved_id) != scores[top_id]:
+                problems.append(
+                    f"saved {saved_id} (score {scores.get(saved_id, '?')}) "
+                    f"but {top_id} had a higher score of {scores[top_id]}"
+                )
     # A guessed job ID fails the run even if the model recovered afterwards.
     # Other errors (like a company that isn't on the list) can be correct behaviour.
     for s in run.steps:
