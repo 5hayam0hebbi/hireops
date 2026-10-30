@@ -348,6 +348,32 @@ def test_a_far_away_made_up_score_is_sent_back(monkeypatch, tmp_path):
     assert run.corrections == 1
     assert run.answer.endswith("Score: 67") and run.warnings == []
 
+def test_a_best_match_without_scores_is_sent_back(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("find_jobs", company="Datadog")]),
+            reply("greenhouse-1 Senior SRE matches your resume best."),  # no score_job
+            reply(calls=[call("score_job", job_id="greenhouse-1")]),
+            reply("greenhouse-1 Senior SRE is the best match."),
+        ]
+    )
+    run = agent.run_agent("Which Datadog job fits me best?", tools, client=client)
+    assert [s["tool"] for s in run.steps] == ["find_jobs", "score_job"]
+    assert run.corrections == 1 and run.warnings == []
+
+
+def test_a_job_list_without_picks_is_accepted(monkeypatch, tmp_path):
+    tools = make_tools(monkeypatch, tmp_path)
+    client = FakeClient(
+        [
+            reply(calls=[call("find_jobs", company="Datadog")]),
+            reply("Here are the Datadog roles: greenhouse-1 Senior SRE."),
+        ]
+    )
+    run = agent.run_agent("Find Datadog roles", tools, client=client)
+    assert run.corrections == 0  # listing jobs is fine without scores
+
 
 def test_a_job_id_is_not_a_score(monkeypatch, tmp_path):
     tools = make_tools(monkeypatch, tmp_path)

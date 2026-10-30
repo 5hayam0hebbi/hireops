@@ -293,6 +293,13 @@ def check_answer(answer, tools):
 # between the word and the number, but never a period or a new line, so the check
 # stays inside one sentence or list line.
 SCORE = re.compile(r"\bscored?\b[^.\n\d]{0,60}\d", re.IGNORECASE)
+# "Best match", "top fit", "matches your resume best": picking a job is a judgment
+# that needs scores, even when the answer shows no number
+PICKS = re.compile(
+    r"\b(?:best|top|strongest|closest)\b[^.\n]{0,40}?\b(?:match|matches|fit|fits)\b"
+    r"|\bmatches your resume\b",
+    re.IGNORECASE,
+)
 MAX_CORRECTIONS = 2  # most times one run may send an answer back to the model
 # "I'll call score_job", "Let me use find_jobs"...: a promise to call, not a call.
 # Plain mentions ("Call list_companies for the names") don't count.
@@ -325,6 +332,11 @@ def answer_problem(answer, run):
         return (
             "Your answer shows scores, but you never called score_job. "
             "Call score_job for each job ID you mention, then answer again."
+        )
+    if PICKS.search(answer) and not scored:
+        return (
+            "Your answer picks a best job, but you never called score_job. "
+            "Call score_job for the jobs you found, then answer again."
         )
     # The model typed a tool call (or just a tool's name) as text instead of calling it
     if TYPED_CALL.search(answer) or BARE_TOOL.match(answer):
