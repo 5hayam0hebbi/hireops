@@ -150,3 +150,16 @@ def test_must_save_top_score_reads_a_result_cut_at_200_characters():
     assert problems == [
         "saved greenhouse-2 (score 50) but greenhouse-1 had a higher score of 80"
     ]
+
+def test_the_eval_never_reads_the_live_boards():
+    tools = eval_agent.make_tools({"companies": []}, "resume", [])
+    assert tools.fetch_jobs is not None  # a sample board, not FETCHERS
+    assert tools.fetch_jobs("Cloudflare") == load_json(eval_agent.SAMPLE_JOBS)["Cloudflare"]
+
+
+def test_sample_jobs_have_enough_to_compare():
+    sample = load_json(eval_agent.SAMPLE_JOBS)
+    for company in ["Cloudflare", "Datadog", "GitLab"]:
+        assert len(sample[company]) >= 2  # the top-score check needs two to compare
+        for job in sample[company]:
+            assert {"id", "title", "location", "description"} <= job.keys()

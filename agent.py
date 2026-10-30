@@ -119,13 +119,14 @@ class Tools:
     """The tools themselves. Each method takes checked arguments and returns plain data."""
 
     def __init__(
-        self, config, resume_text, skills, approve, shortlist_file="shortlist.json"
+        self, config, resume_text, skills, approve, shortlist_file="shortlist.json", fetch_jobs=None
     ):
         self.config = config  # radar_config.json: companies, titles, exclude
         self.resume_text = resume_text
         self.skills = skills  # skills.json, for the rules-only score
         self.approve = approve  # a function that asks the person yes or no
         self.shortlist_file = shortlist_file
+        self.fetch_jobs = fetch_jobs  # None = the live job boards; the eval passes a sample
         # Every job a tool has returned, by ID. These are the only facts the agent has.
         self.jobs = {}
         # IDs list_shortlist returned. Kept apart from self.jobs: saved jobs have no
@@ -160,8 +161,11 @@ class Tools:
                 f"{names}. Don't call find_jobs for it again. "
                 "Tell the person it isn't on their list."
             )
-        fetch = FETCHERS[company["board"]]
-        found = fetch(company["name"], company["slug"])
+        if self.fetch_jobs:  # the eval: a fixed sample, so every run sees the same jobs
+            found = self.fetch_jobs(company["name"])
+        else:
+            fetch = FETCHERS[company["board"]]
+            found = fetch(company["name"], company["slug"])
         titles, exclude = self.config["titles"], self.config["exclude"]
         fits = [job for job in found if title_fits(job, titles, exclude)]
         for job in fits:

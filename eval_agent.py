@@ -14,6 +14,7 @@ from radar import load_json
 # Every case reads this fixed shortlist, never the real shortlist.json: the real one
 # is private and changes whenever a job is saved, so results would differ run to run
 SAMPLE_SHORTLIST = "evals/sample_shortlist.json"
+SAMPLE_JOBS = "evals/sample_jobs.json"
 
 
 def never_approve(question):
@@ -22,9 +23,13 @@ def never_approve(question):
 
 
 def make_tools(config, resume_text, skills):
-    """A fresh Tools for one case, pointed at the sample shortlist."""
+    """A fresh Tools for one case: the sample shortlist and the sample job board."""
+    sample = load_json(SAMPLE_JOBS)
     return agent.Tools(
-        config, resume_text, skills, never_approve, shortlist_file=SAMPLE_SHORTLIST
+        config, resume_text, skills, never_approve,
+        shortlist_file=SAMPLE_SHORTLIST,
+        # lambda = a one-line function: given a company name, return its sample jobs
+        fetch_jobs=lambda name: sample.get(name, []),
     )
 
 
