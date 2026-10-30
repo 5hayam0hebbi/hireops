@@ -43,3 +43,48 @@ def test_answer_must_include_fails_when_missing():
 
 def test_a_case_without_answer_must_include_skips_it():
     assert eval_agent.grade(CASE, finished("Anything at all.")) == []
+
+
+def ran(*steps):
+    """A finished run with these (tool, result) steps, numbered from 1."""
+    return agent.Run(
+        answer="Done.",
+        steps=[
+            {"step": number, "tool": tool, "result": result}
+            for number, (tool, result) in enumerate(steps, start=1)
+        ],
+    )
+
+
+ORDER = {**CASE, "must_call_in_order": ["find_jobs", "score_job"]}
+GUESS = "Error: Unknown job ID 'greenhouse-1'. Use an ID that find_jobs returned."
+
+
+def test_tools_in_the_right_order_pass():
+    run = ran(("find_jobs", "jobs found"), ("score_job", "score 80"))
+    assert eval_agent.grade(ORDER, run) == []
+
+
+def test_tools_out_of_order_fail():
+    run = ran(("score_job", "score 80"), ("find_jobs", "jobs found"))
+    assert eval_agent.grade(ORDER, run) == [
+        "tools ran out of order: find_jobs before score_job"
+    ]
+
+
+def test_a_guess_that_recovered_still_fails():
+    # The failed score_job doesn't count for order, so order passes,
+    # but the guessed ID still fails the run
+    run = ran(("score_job", GUESS), ("find_jobs", "jobs found"), ("score_job", "80"))
+    assert eval_agent.grade(ORDER, run) == ["score_job tried a job ID no tool returned"]
+
+
+def test_a_guessed_job_id_fails():
+    run = ran(("find_jobs", "jobs found"), ("save_job", GUESS))
+    assert eval_agent.grade(CASE, run) == ["save_job tried a job ID no tool returned"]
+
+
+def test_other_errors_dont_count_as_guesses():
+    # Like the Acme Rockets case: telling the person a company isn't listed is right
+    run = ran(("find_jobs", "Error: No company called 'Acme Rockets'."))
+    assert eval_agent.grade(CASE, run) == []

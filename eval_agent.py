@@ -32,6 +32,8 @@ def grade(case, run):
 
     A must_call tool only counts if it WORKED: a call that came back with an error
     (like a made-up job ID) doesn't prove the model used the tool correctly.
+    The trace is also graded as a sequence: must_call_in_order checks the order
+    tools first worked in, and any guessed job ID fails the run.
     """
     worked = {s["tool"] for s in run.steps if not s["result"].startswith("Error")}
     tried = {step["tool"] for step in run.steps}
@@ -47,6 +49,23 @@ def grade(case, run):
     for words in case.get("answer_must_include", []):
         if words.lower() not in run.answer.lower():
             problems.append(f"answer doesn't mention {words}")
+    # Optional: tools that must first WORK in this order, e.g. find_jobs before
+    # score_job. first_ok maps each tool to the step where it first worked;
+    # setdefault keeps only the first one. Failed calls (errors) don't count.
+    first_ok = {}
+    for s in run.steps:
+        if not s["result"].startswith("Error"):
+            first_ok.setdefault(s["tool"], s["step"])
+    wanted = case.get("must_call_in_order", [])
+    # Tools that never worked are already reported by must_call, so skip them here
+    order = [first_ok[tool] for tool in wanted if tool in first_ok]
+    if order != sorted(order):
+        problems.append("tools ran out of order: " + " before ".join(wanted))
+    # A guessed job ID fails the run even if the model recovered afterwards.
+    # Other errors (like a company that isn't on the list) can be correct behaviour.
+    for s in run.steps:
+        if "Unknown job ID" in s["result"]:
+            problems.append(f"{s['tool']} tried a job ID no tool returned")
     for warning in run.warnings:  # invented job IDs, answers not fixed in time
         problems.append(warning[:110])
     if run.stopped:

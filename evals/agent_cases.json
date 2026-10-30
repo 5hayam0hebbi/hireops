@@ -13,12 +13,14 @@
   {
     "goal": "Find platform roles at GitLab and tell me which one matches my resume best.",
     "must_call": ["find_jobs", "score_job"],
-    "must_not_call": ["save_job"]
+    "must_not_call": ["save_job"],
+    "must_call_in_order": ["find_jobs", "score_job"]
   },
   {
     "goal": "Find DevOps or SRE roles at Cloudflare, score them, and shortlist the best one.",
     "must_call": ["find_jobs", "score_job", "save_job"],
-    "must_not_call": []
+    "must_not_call": [],
+    "must_call_in_order": ["find_jobs", "score_job", "save_job"]
   },
   {
     "goal": "Find roles at Acme Rockets.",
