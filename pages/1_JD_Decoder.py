@@ -5,6 +5,7 @@ import streamlit as st
 from decoder import decode
 from links import UnsupportedLink, job_from_link
 from resume_files import KINDS, read_resume
+from webtext import plain
 
 
 def get_job_text(link, pasted):
@@ -95,7 +96,7 @@ def show(decoded):
     if decoded.by_meaning:
         st.write("**Possibly shown in other words** (check each line yourself):")
         for skill, line in decoded.by_meaning.items():
-            st.markdown(f'- **{skill}**: "{line}"')
+            st.markdown(f'- **{skill}**: "{plain(line)}"')
     if decoded.used_ai:
         st.write("**Suggested resume bullets** (check every word before using them):")
         if not decoded.bullets:
@@ -103,9 +104,9 @@ def show(decoded):
                 "None usable this time. Click Decode again, or try a bigger model."
             )
         for bullet in decoded.bullets:
-            st.markdown(f"- {bullet.text}")
+            st.markdown(f"- {plain(bullet.text)}")
             if bullet.source:
-                st.caption(f'Based on your line: "{bullet.source}"')
+                st.caption(f'Based on your line: "{plain(bullet.source)}"')
             if bullet.invented:
                 st.warning(f"{', '.join(bullet.invented)} is not in your resume")
             for warning in bullet.warnings:
@@ -113,7 +114,7 @@ def show(decoded):
     if insights and insights.red_flags:
         st.write("**Possible red flags** (with the words from the posting):")
         for flag in insights.red_flags:
-            st.markdown(f'- {flag.concern}: "{flag.quote}"')
+            st.markdown(f'- {plain(flag.concern)}: "{plain(flag.quote)}"')
 
 
 st.title("JD Decoder")
