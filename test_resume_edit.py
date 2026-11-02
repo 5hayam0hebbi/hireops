@@ -59,3 +59,8 @@ def test_the_source_line_picks_the_section():
     places = edit.find_places(edit.text_lines(RESUME))
     assert edit.suggested(places, "Owned disaster recovery exercises") == 1
     assert edit.suggested(places, "a line that isn't there") == 0
+
+def test_a_bullet_is_never_added_twice():
+    new = edit.add_to_text(RESUME, None, ["Led a team of 25 engineers", NEW])
+    assert new.count("Led a team of 25 engineers") == 1
+    assert NEW in new

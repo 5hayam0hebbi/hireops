@@ -97,6 +97,8 @@ def suggested(places, source):
 
 def add_to_text(text, start, bullets):
     """The text with the new bullets after the last line of the chosen section."""
+    # Skip a bullet whose words are already in the resume, so nothing is added twice
+    bullets = [b for b in bullets if b.lower() not in text.lower()]
     raw = text.splitlines()
     lines = text_lines(text)
     if start is None:  # "At the end of the resume"
