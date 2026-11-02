@@ -118,12 +118,6 @@ Quality:
 Built with an agentic workflow: `CLAUDE.md` gives coding agents the repo map and
 rules (plan first, small changes with tests, a human reviews every diff).
 
-## Web app
-
-    streamlit run app.py
-
-Opens HireOps in your browser. On the JD Decoder page, paste a job link (Greenhouse, Lever or Ashby) or the job text, upload your resume (PDF, Word or text), and click Decode. Everything runs on your own laptop.
-
 ## Run it in Docker
 
     docker compose up -d ollama
@@ -135,3 +129,21 @@ Every push to main builds the image and publishes it to `ghcr.io/5hayam0hebbi/hi
 ## Deploy to Azure with Terraform
 
 `infra/` deploys the image to Azure Container Apps as an on-demand job (rules-only mode). See `infra/terraform.tfvars.example`, then `terraform init && terraform apply`. `terraform destroy` removes everything.
+
+## The HireOps web app (preview)
+
+One app on your own laptop. From the `hireops` folder, with the Python box active:
+
+    streamlit run app.py
+
+Your browser opens at http://localhost:8501. On the **JD Decoder** page:
+
+1. Paste a Greenhouse or Lever job link, or paste the job text (works for any site, including LinkedIn and Workday career sites).
+2. Upload your resume: PDF, Word (.docx), .txt or .md.
+3. Click **Decode**. You'll see the skills the AI found, your match score, the missing skills, skills possibly shown in other words (with your own resume line as proof) and suggested bullets, with a warning on any number your resume doesn't contain.
+
+Turn **Use the AI** off for a fast rules-only check. If Ollama isn't running, the page says so and uses rules only.
+
+**Privacy:** your resume is read on your computer and never uploaded. Job links are read only through Greenhouse's and Lever's public job-board APIs; for any other site, you paste the text.
+
+Coming next: edit the suggested bullets, add them to your resume and download a copy named after the job; then the Interview Coach page.
