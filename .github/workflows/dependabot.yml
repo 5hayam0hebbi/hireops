@@ -1,0 +1,21 @@
+# dependabot.yml - tells GitHub's Dependabot what to watch and how often
+version: 2
+updates:
+  # Python packages listed in requirements.txt
+  - package-ecosystem: "pip"
+    directory: "/"            # requirements.txt is in the top folder
+    schedule:
+      interval: "weekly"      # check once a week, so PRs don't flood in
+    open-pull-requests-limit: 5   # at most 5 open update PRs at a time
+
+  # The actions your workflows use (checkout, setup-python, docker/...)
+  - package-ecosystem: "github-actions"
+    directory: "/"            # Dependabot finds .github/workflows on its own
+    schedule:
+      interval: "weekly"
+
+  # The base image in the Dockerfile (python:3.12-slim)
+  - package-ecosystem: "docker"
+    directory: "/"            # the Dockerfile is in the top folder
+    schedule:
+      interval: "weekly"
