@@ -27,5 +27,14 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+            # Trivy looks inside the image for packages with known security holes (CVEs)
+      - name: Scan the image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0   # the scanner; Dependabot will keep this version current
+        with:
+          image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}   # the image this run just built
+          format: table               # print a readable table in the log
+          severity: CRITICAL,HIGH     # only the serious ones
+          ignore-unfixed: true        # skip holes that have no fix released yet (nothing you can do about them)
+          exit-code: "0"              # report only for now; Wednesday you change this to "1" so new holes fail the build
       - name: Smoke test the image
         run: docker run --rm ghcr.io/${{ github.repository }}:${{ github.sha }} samples/job.txt --resume samples/resume.md --no-ai
