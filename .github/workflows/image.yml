@@ -37,4 +37,4 @@ jobs:
           format: table               # print a readable table in the log
           severity: CRITICAL,HIGH     # only the serious ones
           ignore-unfixed: true        # skip holes that have no fix released yet (nothing you can do about them)
-          exit-code: "0"              # report only for now; Wednesday you change this to "1" so new holes fail the build
+          exit-code: "1"              # "1" so new holes fail the build
