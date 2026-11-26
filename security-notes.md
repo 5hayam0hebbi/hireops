@@ -32,6 +32,13 @@ Note: in Trivy's table, Status "fixed" means a fixed version has been released, 
 | 2026-11-26 | Ruff S rules | 204 S101, 0 after tuning | All S101 are assert in test files (false positives) |
 | 2026-11-26 | CodeQL (python + actions) | 3 Medium, all fixed | Missing workflow permissions; added contents: read (least privilege) |
 
+## SBOM and signing
+
+| Date | What | Result |
+| --- | --- | --- |
+| 2026-11-26 | SBOM (SPDX) generated for every image, kept 90 days | 140 packages; libzstd1 confirmed at the patched version |
+| 2026-11-26 | Keyless image signing (cosign) + SBOM attestation, verified in the pipeline | Every image on main is signed and carries its SBOM (Rekor log index 4135427551) |
+
 ## Interview answers
 
 ### 1. "How have you handled vulnerable dependencies?"

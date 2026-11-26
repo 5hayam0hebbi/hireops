@@ -1,0 +1,29 @@
+# dependabot-automerge.yml - patch updates from Dependabot merge on their own once CI passes
+name: Dependabot auto-merge
+
+on: pull_request
+
+# Needs write access to merge, and nothing more
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    # Only for Dependabot's pull requests, never anyone else's
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      # Reads the PR and tells us how big the version jump is
+      - name: Read what Dependabot is updating
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      # Patch updates only: turn on auto-merge; GitHub merges after the required CI check passes
+      - name: Auto-merge patch updates after CI
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
