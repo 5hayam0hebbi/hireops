@@ -5,6 +5,10 @@ on:
     paths: ["infra/**"]
   workflow_dispatch:
 
+# Least privilege: this workflow only needs to read the code
+permissions:
+  contents: read
+    
 jobs:
   validate:
     runs-on: ubuntu-latest

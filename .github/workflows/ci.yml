@@ -3,7 +3,10 @@ name: CI
 
 # When to run: every push, and every pull request
 on: [push, pull_request]
-
+# Least privilege: this workflow only needs to read the code
+permissions:
+  contents: read
+  
 jobs:
   test:
     # A clean Ubuntu Linux computer in GitHub's cloud, free for public repos
