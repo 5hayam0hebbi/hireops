@@ -11,6 +11,9 @@ HireOps reads resumes, which are personal data. It runs on a local model, so not
 | Static analysis (SAST) | CodeQL | Every push + weekly | Alert in the Security tab |
 | Python security rules (SAST) | Ruff "S" rules (Bandit) | Every push | CI fails |
 | Container image scan | Trivy | Every image build | Build fails |
+| Software bill of materials | Trivy (SPDX) | Every image build | Kept 90 days; attached to the signed image |
+| Image signing | cosign (keyless) | Every image build | Signature verified in the pipeline |
+| Patch fast-track | Dependabot + auto-merge | On every patch update | Merges only after required CI passes |
 
 ## Reporting a problem
 
