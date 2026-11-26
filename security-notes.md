@@ -23,6 +23,7 @@ Note: in Trivy's table, Status "fixed" means a fixed version has been released, 
 | Date | Pull request | What it updates | Decision | Why |
 | --- | --- | --- | --- | --- |
 | 2026-11-26 | #10 | narwhals 2.28.0 → 2.29.0 (pip) | Merged | Minor version bump, one-line change, CI green |
+| 2026-11-26 | #11 | streamlit 1.66.1 → 1.67.0 (pip, minor) | Merged | Minor update; release notes reviewed; one-line change; CI green |
 
 ## SAST (CodeQL and Ruff security rules)
 
@@ -38,6 +39,7 @@ Note: in Trivy's table, Status "fixed" means a fixed version has been released, 
 | --- | --- | --- |
 | 2026-11-26 | SBOM (SPDX) generated for every image, kept 90 days | 140 packages; libzstd1 confirmed at the patched version |
 | 2026-11-26 | Keyless image signing (cosign) + SBOM attestation, verified in the pipeline | Every image on main is signed and carries its SBOM (Rekor log index 4135427551) |
+| 2026-11-26 | Fast-track lane: Dependabot patch updates auto-merge after required CI; minor/major still reviewed | Lane tested on #11 (minor): workflow ran, merge correctly skipped for manual review |
 
 ## Interview answers
 
