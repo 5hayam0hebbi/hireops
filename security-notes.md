@@ -26,6 +26,9 @@ Note: in Trivy's table, Status "fixed" means a fixed version has been released, 
 
 | Date | Tool | Findings | Notes |
 | --- | --- | --- | --- |
+| 2026-11-26 | CodeQL (python + actions) | 3 Medium, Workflow doesn't contain permission | First scan, default setup |
+| 2026-11-26 | Ruff S rules | 204 S101, 0 after tuning | All S101 are assert in test files (false positives) |
+| 2026-11-26 | CodeQL (python + actions) | 3 Medium, all fixed | Missing workflow permissions; added contents: read (least privilege) |
 
 ## Interview answers
 
