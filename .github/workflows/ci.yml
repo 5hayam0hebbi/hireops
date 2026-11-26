@@ -15,7 +15,7 @@ jobs:
       # Download your repo's code onto that machine
       - uses: actions/checkout@v7
       # Install Python 3.12 there
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       # Install exactly the packages listed in requirements.txt
