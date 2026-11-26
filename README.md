@@ -148,7 +148,6 @@ Turn **Use the AI** off for a fast rules-only check. If Ollama isn't running, th
 
 Coming next: edit the suggested bullets, add them to your resume and download a copy named after the job; then the Interview Coach page.
 
-
 ## Security
 
 Every push runs dependency, code and container checks: Dependabot, CodeQL, Ruff security rules and a Trivy image scan. Details are in [SECURITY.md](SECURITY.md).
