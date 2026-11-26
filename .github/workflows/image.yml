@@ -31,7 +31,7 @@ jobs:
       - name: Smoke test the image
         run: docker run --rm ghcr.io/${{ github.repository }}:${{ github.sha }} samples/job.txt --resume samples/resume.md --no-ai
       - name: Scan the image with Trivy
-        uses: aquasecurity/trivy-action@0.28.0   # the scanner; Dependabot will keep this version current
+        uses: aquasecurity/trivy-action@0.36.0   # the scanner; Dependabot will keep this version current
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}   # the image this run just built
           format: table               # print a readable table in the log
