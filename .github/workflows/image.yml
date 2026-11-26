@@ -49,7 +49,7 @@ jobs:
           exit-code: "0"              # making an SBOM never fails the build
       # Keep the SBOM with the run so you (or an auditor) can download it later
       - name: Keep the SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: sbom.spdx.json
