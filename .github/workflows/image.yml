@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   packages: write    # allows pushing to ghcr.io
+  id-token: write    # lets the workflow prove its identity to Sigstore for keyless signing
 
 jobs:
   build:
@@ -20,7 +21,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -54,3 +56,18 @@ jobs:
           name: sbom
           path: sbom.spdx.json
           retention-days: 90
+            # cosign signs container images; keyless = GitHub's identity instead of a stored key
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+      # Sign the exact image this run built (by digest, so a re-tag can't fool it)
+      - name: Sign the image
+        run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+      # Attach the SBOM to the signed image, so the ingredients list travels with it
+      - name: Attach the SBOM as a signed attestation
+        run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+      # Prove it worked: verify the signature came from THIS repo's workflow
+      - name: Verify the signature
+        run: |
+          cosign verify ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }} \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
