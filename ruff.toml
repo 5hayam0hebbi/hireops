@@ -1,0 +1,8 @@
+# ruff.toml - settings Ruff reads every time it runs (on your Mac and in CI)
+[lint]
+# Keep Ruff's normal checks, and add the "S" security rules (from the Bandit scanner)
+extend-select = ["S"]
+
+[lint.per-file-ignores]
+# In test files, assert is how tests work, so the assert rule (S101) is a false positive there
+"test_*.py" = ["S101"]
