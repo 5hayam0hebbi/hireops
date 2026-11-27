@@ -9,6 +9,11 @@ from webtext import plain
 def show_feedback(feedback):
     """The four STAR scores side by side, the tip, and the tighter version."""
     st.write(f"**STAR score: {feedback.total()} of 8**")
+    if feedback.total() >= 6:
+        st.success("Strong structure: practise saying it out loud.")
+    else:
+        weakest = min(feedback.scores, key=feedback.scores.get)  # the lowest score
+        st.info(f"Work on the {weakest} part first.")
     columns = st.columns(4)  # four columns side by side
     # zip pairs each column with one (part, score) item: Situation with the first...
     for column, (part, score) in zip(columns, feedback.scores.items(), strict=True):

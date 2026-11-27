@@ -80,3 +80,19 @@ def test_coach_page_with_rules_only(monkeypatch, tmp_path):
     assert page.button[1].disabled  # STAR feedback needs the AI
     page.button[2].click().run(timeout=WAIT)  # Save to my answer bank
     assert "Saved: 1 in your bank" in page.success[0].value
+
+
+def test_coach_feedback_verdict(monkeypatch):
+    def fake_feedback(question, answer):
+        scores = {"Situation": 2, "Task": 2, "Action": 1, "Result": 0}
+        return coach.Feedback(question, scores, "Add the result.", "I led it.", [])
+
+    monkeypatch.setattr(coach, "star_feedback", fake_feedback)
+    page = AppTest.from_file("pages/2_Interview_Coach.py").run(timeout=WAIT)
+    page.text_area[0].input(JOB)
+    page.toggle[0].set_value(False)
+    page.button[0].click().run(timeout=WAIT)
+    page.toggle[0].set_value(True)  # the AI on again, for the feedback button
+    page.text_area[1].input("I led the bridge.").run(timeout=WAIT)
+    page.button[1].click().run(timeout=WAIT)
+    assert "Work on the Result part first." in page.info[-1].value    
