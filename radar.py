@@ -116,13 +116,30 @@ def write_digest(jobs, alert_jobs=(), folder="digests"):
         link = f"[{job['title']}]({job['url']})"
         row = f"| {job['score']}% | {job['company']} | {link} | {job['location']} |"
         lines.append(row)
-        if alert_jobs:  # an empty list or () counts as False, so this part is skipped
-            lines += ["", "## From your job alerts", "", "| Source | Role |", "|---|---|"]
-            for job in alert_jobs:
-                lines.append(f"| {job['company']} | [{job['title']}]({job['url']}) |")
+    if alert_jobs:  # an empty list or () counts as False, so this part is skipped
+        lines += ["", "## From your job alerts", "", "| Source | Role |", "|---|---|"]
+        for job in alert_jobs:
+            lines.append(f"| {job['company']} | [{job['title']}]({job['url']}) |")
     # Join the lines with line breaks and write them all to the file
     path.write_text("\n".join(lines) + "\n")
     return path
+
+
+def find_roles(config, resume_text, skills, alerts="private/alerts", seen=()):
+    """Job Radar's work, for the command line AND the web app.
+
+    Returns three things: the new matching roles (best match first), the matching
+    roles from your saved alert emails, and how many jobs were read in total.
+    seen = IDs of roles already reported, to skip; () skips nothing.
+    """
+    jobs = fetch_all(config["companies"])
+    titles, places, exclude = config["titles"], config["locations"], config["exclude"]
+    matches = [job for job in jobs if is_match(job, titles, places, exclude)]
+    # Jobs from your saved alert emails have no place or job text: check the title only
+    alert_jobs = [j for j in read_alerts(alerts) if title_fits(j, titles, exclude)]
+    matches = new_only(matches, seen)
+    alert_jobs = new_only(alert_jobs, seen)
+    return score_jobs(matches, resume_text, skills), alert_jobs, len(jobs)
 
 
 def main():
@@ -144,22 +161,16 @@ def main():
     skills = load_json("skills.json")
     with open(args.resume) as f:
         resume_text = f.read()
-
     print("Reading job boards...")
-    jobs = fetch_all(config["companies"])
-    titles, places, exclude = config["titles"], config["locations"], config["exclude"]
-    matches = [job for job in jobs if is_match(job, titles, places, exclude)]
-    # Jobs from your saved alert emails have no place or job text: check the title only
-    alert_jobs = [j for j in read_alerts(args.alerts) if title_fits(j, titles, exclude)]
-
     seen = load_seen()
-    if not args.all:
-        matches = new_only(matches, seen)
-        alert_jobs = new_only(alert_jobs, seen)
+    # --all means "show roles seen before too", so nothing is skipped
+    skip = () if args.all else seen
+    matches, alert_jobs, total = find_roles(
+        config, resume_text, skills, args.alerts, skip
+    )
     if not matches and not alert_jobs:
         print("\nNo new matching roles since the last run.")
 
-    matches = score_jobs(matches, resume_text, skills)
     for job in matches:
         # :>3 makes every score 3 characters wide, so the scores line up
         found = f"{len(job['have'])} of {len(job['wanted'])} skills"
@@ -170,11 +181,12 @@ def main():
             # [:3] keeps the first three; join glues them together with commas
             print(f"       Missing: {', '.join(job['missing'][:3])}")
 
-        if alert_jobs:
-            print(f"\nFrom your job alerts ({len(alert_jobs)}; open each one to read it):")
-        for job in alert_jobs:
-            print(f"  {job['company']} | {job['title']}")
-            print(f"       {job['url']}")
+    # Lined up with "for job in matches" above: it runs once, after the loop
+    if alert_jobs:
+        print(f"\nFrom your job alerts ({len(alert_jobs)}; open each one to read it):")
+    for job in alert_jobs:
+        print(f"  {job['company']} | {job['title']}")
+        print(f"       {job['url']}")
 
     if matches or alert_jobs:
         path = write_digest(matches, alert_jobs)
@@ -182,11 +194,9 @@ def main():
 
     # Remember everything reported today, so tomorrow shows only new roles
     seen.update(job["id"] for job in matches + alert_jobs)
-
-    # Remember everything reported today, so tomorrow shows only new roles
-    seen.update(job["id"] for job in matches)
     save_seen(seen)
-    logger.info("Job Radar: %s jobs read, %s new matches", len(jobs), len(matches))
+    logger.info("Job Radar: %s jobs read, %s new matches", total, len(matches))
+    
 
 
 if __name__ == "__main__":

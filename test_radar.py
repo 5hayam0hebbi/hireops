@@ -1,4 +1,5 @@
 # test_radar.py - checks for Job Radar that never touch the internet
+import radar
 from boards import clean, from_ashby, from_greenhouse, from_lever
 from radar import is_match, new_only, score_jobs
 
@@ -95,3 +96,54 @@ def test_from_ashby_joins_all_places():
     assert result["id"] == "ashby-abc"
     assert result["location"] == "Toronto; Montreal; Canada; Remote"
     assert result["description"] == "Run Kubernetes"
+
+
+
+CONFIG = {
+    "companies": [{"name": "Example Bank", "board": "greenhouse", "slug": "x"}],
+    "titles": TITLES,
+    "locations": LOCATIONS,
+    "exclude": ["Junior"],
+}
+
+
+def board_job(title, job_id, description):
+    """A job as fetch_all() gives it, for tests."""
+    found = job(title, job_id=job_id)  # title, location and id
+    found["company"] = "Example Bank"
+    found["url"] = "https://example.com/" + job_id
+    found["description"] = description
+    return found
+
+
+def fake_board(companies):
+    """Stands in for fetch_all(): two jobs, no internet."""
+    return [
+        board_job("Senior SRE", "a", "Python and Azure"),
+        board_job("Account Executive", "b", "Sales"),
+    ]
+
+
+def test_find_roles(monkeypatch):
+    monkeypatch.setattr(radar, "fetch_all", fake_board)
+    matches, alert_jobs, total = radar.find_roles(
+        CONFIG, "I write Python", ["Python", "Azure"], alerts="samples/alerts"
+    )
+    assert total == 2
+    assert [j["id"] for j in matches] == ["a"]  # the sales job doesn't match
+    assert matches[0]["score"] == 50
+    assert alert_jobs  # the sample alert emails have matching titles
+    # Roles seen before are skipped
+    again, _, _ = radar.find_roles(CONFIG, "Python", ["Python"], "samples/alerts", {"a"})
+    assert again == []
+
+
+def test_digest_lists_alert_jobs_once(tmp_path):
+    jobs = [board_job("SRE", "1", ""), board_job("SRE", "2", "")]
+    for found in jobs:
+        found["score"] = 50
+    alert = [{"company": "LinkedIn alert", "title": "SRE", "url": "https://x.y"}]
+    # tmp_path = a fresh folder just for this test, so digests/ isn't touched
+    path = radar.write_digest(jobs, alert, folder=tmp_path)
+    # Before the fix, the alert section was repeated under every job
+    assert path.read_text().count("## From your job alerts") == 1
