@@ -3,6 +3,7 @@ from streamlit.testing.v1 import AppTest
 
 import coach
 import decoder
+import radar
 from decoder import Bullet, Decoded
 from matcher import MatchResult
 
@@ -95,4 +96,28 @@ def test_coach_feedback_verdict(monkeypatch):
     page.toggle[0].set_value(True)  # the AI on again, for the feedback button
     page.text_area[1].input("I led the bridge.").run(timeout=WAIT)
     page.button[1].click().run(timeout=WAIT)
-    assert "Work on the Result part first." in page.info[-1].value    
+    assert "Work on the Result part first." in page.info[-1].value
+
+
+def fake_find(config, resume_text, skills, alerts="private/alerts", seen=()):
+    """Stands in for find_roles(): one role, no job boards."""
+    role = {
+        "id": "a",
+        "score": 75,
+        "company": "Example Bank",
+        "title": "Senior SRE",
+        "location": "Toronto",
+        "missing": ["Terraform"],
+        "url": "https://example.com/a",
+    }
+    return [role], [], 12  # matches, alert jobs, jobs read
+
+
+def test_radar_page(monkeypatch):
+    monkeypatch.setattr(radar, "find_roles", fake_find)  # tests never read boards
+    page = AppTest.from_file("pages/3_Job_Radar.py").run(timeout=WAIT)
+    page.file_uploader[0].upload("resume.md", RESUME, "text/markdown")
+    page.button[0].click().run(timeout=WAIT)  # Check the job boards now
+    assert not page.exception
+    assert "Read 12 open jobs" in " ".join(m.value for m in page.markdown)
+    assert page.dataframe[0].value.iloc[0]["Company"] == "Example Bank"

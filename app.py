@@ -19,7 +19,11 @@ st.page_link(
     "pages/2_Interview_Coach.py",
     label="Interview Coach: likely questions for a job, and STAR feedback",
 )
-st.caption("Coming next: Job Radar, Pipeline and Search SLOs.")
+st.page_link(
+    "pages/3_Job_Radar.py",
+    label="Job Radar: new matching roles at your target companies",
+)
+st.caption("Coming next: Pipeline and Search SLOs.")
 
 st.subheader("Your privacy")
 st.write(
