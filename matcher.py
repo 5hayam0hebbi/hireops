@@ -5,9 +5,10 @@ from dataclasses import dataclass
 # Other ways people write the same skill. Keys are skills in lowercase; values are aliases.
 ALIASES = {
     "kubernetes": ["k8s"],
-    "leadership": ["led a team", "managed a team", "people leader"],
+    "leadership": ["led a team", "managed a team", "people leader", "team lead", "director", "senior manager", "led a"],
     "sre": ["site reliability"],
     "incident management": ["incident response"],
+    "observability": ["monitoring"],
 }
 
 # Words that describe a skill without identifying it: "Monitoring Tools" is really "monitoring"

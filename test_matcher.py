@@ -150,3 +150,13 @@ def test_examples_are_not_a_free_pass():
 def test_a_long_requirement_matches_its_core_words():
     resume = "Senior DevOps and Cloud Engineer | Azure and AKS"
     assert mentions(resume, "Proven experience as a DevOps Engineer with a focus on Azure and AKS.")
+
+
+def test_titles_and_team_size_count_as_leadership():
+    assert mentions("Director, Production Support", "Leadership")
+    assert mentions("led a 40-person team", "Leadership")
+    assert not mentions("Python developer, built APIs", "Leadership")
+
+
+def test_monitoring_counts_as_observability():
+    assert mentions("Monitoring and Operations: Splunk", "Observability")
