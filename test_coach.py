@@ -45,7 +45,8 @@ def test_template_questions_need_no_ai():
     found = coach.template_questions(SKILLS)
     assert len(found) == 3
     assert found[0].text.startswith("Tell me about a time you used Incident management")
-
+    assert [q.kind for q in found] == ["behavioural", "behavioural", "technical"]
+    
 
 def test_questions_for_with_rules_only():
     found, notes = coach.questions_for(JOB, use_ai=False)  # skills.json, no AI

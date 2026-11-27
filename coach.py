@@ -59,10 +59,14 @@ def likely_questions(job_text, skills):
 def template_questions(skills):
     """Rules-only questions (no AI): 5 behavioural, then 3 technical, from the skills."""
     questions = []
-    for skill in skills[:5]:
+    if len(skills) < 6:  # too few for both kinds: the last one is technical
+        behavioural, technical = skills[:-1], skills[-1:]
+    else:
+        behavioural, technical = skills[:5], skills[5:8]
+    for skill in behavioural:
         text = f"Tell me about a time you used {skill} to solve a real problem."
         questions.append(Question(text=text, kind="behavioural", skill=skill))
-    for skill in skills[5:8]:
+    for skill in technical:
         text = f"How would you explain your approach to {skill} to a new teammate?"
         questions.append(Question(text=text, kind="technical", skill=skill))
     return questions
