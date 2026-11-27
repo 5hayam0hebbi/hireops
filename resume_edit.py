@@ -114,6 +114,7 @@ def find_places(lines):
     places.append(Place(None, "At the end of the resume"))
     return places
 
+
 def places_for(name, data, text):
     """The places in this resume. Word files use their paragraphs; others the text."""
     if Path(name).suffix.lower() == ".docx":
@@ -191,7 +192,9 @@ def text_to_docx(text):
         if BULLET.match(line):
             document.add_paragraph(BULLET.sub("", line), style="List Bullet")
         elif line.startswith("#"):
-            document.add_heading(line.lstrip("#").strip(), level=1)
+            # "## Experience" -> level 2: count the # signs at the start
+            level = len(line) - len(line.lstrip("#"))
+            document.add_heading(line.lstrip("#").strip(), level=min(level, 3))
         elif line.strip():
             document.add_paragraph(line)
     buffer = BytesIO()

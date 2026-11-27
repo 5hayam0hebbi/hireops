@@ -123,3 +123,9 @@ def test_download_name_is_named_after_the_job():
         "resume-senior-sre.md"
     )
     assert edit.download_name("", "cv.txt") == "resume-job.txt"
+
+
+def test_heading_levels_in_a_pdf_copy():
+    data = edit.text_to_docx("# Alex Rivera\n## Experience\n- Led 25 engineers")
+    styles = [p.style.name for p in Document(BytesIO(data)).paragraphs]
+    assert styles == ["Heading 1", "Heading 2", "List Bullet"]
