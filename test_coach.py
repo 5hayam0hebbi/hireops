@@ -46,7 +46,7 @@ def test_template_questions_need_no_ai():
     assert len(found) == 3
     assert found[0].text.startswith("Tell me about a time you used Incident management")
     assert [q.kind for q in found] == ["behavioural", "behavioural", "technical"]
-    
+
 
 def test_questions_for_with_rules_only():
     found, notes = coach.questions_for(JOB, use_ai=False)  # skills.json, no AI
@@ -78,3 +78,34 @@ def test_questions_for_uses_the_must_haves(monkeypatch):
     assert asked == [["Kubernetes"]]  # only the must-have
     assert found[0].skill == "Kubernetes"  # template questions instead
     assert "templates instead" in notes[0]
+
+
+def test_feedback_flags_invented_numbers(monkeypatch):
+    scores = coach.StarScores(
+        situation=2,
+        task=1,
+        action=2,
+        result=1,
+        tip="Say what changed.",
+        tighter="I led the bridge and cut the outage to 20 minutes.",
+    )
+    monkeypatch.setattr(coach, "ask", fake_answer(scores))
+    found = coach.star_feedback("Tell me about an outage.", "I led the bridge.")
+    assert found.total() == 6
+    assert found.invented == ["20"]  # the answer never said 20
+
+
+def test_answer_notes():
+    assert coach.answer_notes("I led the bridge.")[0].startswith("4 words")
+    long_answer = " ".join(["word"] * 400) + " 30"
+    assert coach.answer_notes(long_answer) == [
+        "401 words: aim for under 2 minutes (about 300 words)."
+    ]
+
+
+def test_answer_bank(tmp_path):
+    bank = tmp_path / "answers.json"  # tmp_path = a fresh folder just for this test
+    assert coach.load_bank(bank) == []
+    assert coach.save_answer("Q1?", "My answer", bank) == 1
+    assert coach.save_answer("Q2?", "Another", bank) == 2
+    assert coach.load_bank(bank)[1]["question"] == "Q2?"

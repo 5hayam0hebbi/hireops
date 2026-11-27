@@ -1,11 +1,19 @@
 # coach.py - Interview Coach's engine: likely questions for a job, and STAR feedback
+import json
+from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from ai import AIError, ask
+from bullets import unsupported_numbers
 from decoder import decode, say_nothing
 from matcher import mentions
+
+# Your saved answers: in private/, which .gitignore keeps out of GitHub
+BANK = Path("private/answers.json")
 
 
 # One interview question from the AI, and the job skill it tests
@@ -96,3 +104,88 @@ def questions_for(job_text, use_ai=True, progress=say_nothing):
         except (ConnectionError, AIError) as error:
             notes.append(f"No AI questions this time: {error}")
     return template_questions(skills), notes
+
+
+# The AI's STAR scores: 0 = missing, 1 = vague, 2 = clear. ge/le = "at least/at most"
+class StarScores(BaseModel):
+    situation: int = Field(ge=0, le=2)
+    task: int = Field(ge=0, le=2)
+    action: int = Field(ge=0, le=2)
+    result: int = Field(ge=0, le=2)
+    tip: str = Field(max_length=300)
+    tighter: str = Field(max_length=1500)
+
+
+FEEDBACK_PROMPT = """You are an interview coach. Score the answer below on STAR,
+0 to 2 for each part (0 = missing, 1 = vague, 2 = clear and specific):
+situation = the context; task = what the person had to do; action = what THEY did
+(not the team); result = what changed, ideally with a number.
+tip = the one change that would help this answer most, in one sentence.
+tighter = the same answer rewritten in under 150 words, in the first person.
+Use ONLY facts from the answer. Never add numbers, tools or results it doesn't contain.
+
+Question: {question}
+
+Answer: {answer}"""
+
+
+# What the page shows after "Get STAR feedback"
+@dataclass
+class Feedback:
+    question: str
+    scores: dict[str, int]  # {"Situation": 2, "Task": 1, ...}
+    tip: str
+    tighter: str
+    invented: list[str]  # numbers in the tighter version that your answer never had
+
+    def total(self):
+        """All four scores added up, out of 8."""
+        return sum(self.scores.values())
+
+
+def star_feedback(question, answer):
+    """The AI scores your answer; the code checks its rewrite for invented numbers."""
+    prompt = FEEDBACK_PROMPT.format(question=question, answer=answer)
+    found = ask(prompt, StarScores, temperature=0.2)
+    scores = {
+        "Situation": found.situation,
+        "Task": found.task,
+        "Action": found.action,
+        "Result": found.result,
+    }
+    tighter = found.tighter.strip()
+    invented = sorted(unsupported_numbers(tighter, answer))  # same check as bullets
+    return Feedback(question, scores, found.tip.strip(), tighter, invented)
+
+
+def answer_notes(answer):
+    """Plain rules about length and numbers. They work with the AI off, too."""
+    words = len(answer.split())
+    notes = []
+    if words < 60:
+        notes.append(f"{words} words: a full STAR answer is usually 150 to 300.")
+    elif words > 350:
+        notes.append(f"{words} words: aim for under 2 minutes (about 300 words).")
+    if not any(character.isdigit() for character in answer):
+        notes.append("No number yet: add one to the result if you're sure of it.")
+    return notes
+
+
+def load_bank(path=None):
+    """Your saved answers, as a list. An empty list if there's no file yet."""
+    path = Path(path or BANK)  # BANK unless a test gives another path
+    if not path.exists():
+        return []
+    return json.loads(path.read_text())
+
+
+def save_answer(question, answer, path=None):
+    """Add one answer to your bank and return how many answers it now holds."""
+    path = Path(path or BANK)
+    answers = load_bank(path)
+    answers.append(
+        {"question": question, "answer": answer, "saved": date.today().isoformat()}
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)  # make private/ if it's missing
+    path.write_text(json.dumps(answers, indent=2))
+    return len(answers)
