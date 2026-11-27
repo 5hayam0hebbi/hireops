@@ -41,6 +41,8 @@ if st.button("Check the job boards now", type="primary"):
 if "radar" in st.session_state:
     matches, alert_jobs, total = st.session_state["radar"]
     st.write(f"Read {total} open jobs: **{len(matches)} matching roles**.")
+    least = st.slider("Minimum match (%)", 0, 100, 0, step=10)
+    matches = [job for job in matches if job["score"] >= least]
     # One row per role; a list of dictionaries becomes a table
     rows = [
         {

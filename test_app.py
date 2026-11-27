@@ -121,3 +121,12 @@ def test_radar_page(monkeypatch):
     assert not page.exception
     assert "Read 12 open jobs" in " ".join(m.value for m in page.markdown)
     assert page.dataframe[0].value.iloc[0]["Company"] == "Example Bank"
+
+
+def test_radar_minimum_match(monkeypatch):
+    monkeypatch.setattr(radar, "find_roles", fake_find)
+    page = AppTest.from_file("pages/3_Job_Radar.py").run(timeout=WAIT)
+    page.file_uploader[0].upload("resume.md", RESUME, "text/markdown")
+    page.button[0].click().run(timeout=WAIT)
+    page.slider[0].set_value(80).run(timeout=WAIT)  # the role is 75%
+    assert page.dataframe[0].value.empty
