@@ -61,7 +61,7 @@ Your resume and job files never leave your computer. The samples in this repo ar
 
 ### Tests
 
-`pytest -v` runs 107 tests across all the tools with no AI needed (the AI's answers are faked). `test_real_jobs.py` holds regression tests from real job postings: each mistake HireOps made on a real job became a test, so it can't come back. GitHub Actions runs Ruff and the tests on every push.
+`pytest -v` runs 159 tests across all the tools with no AI needed (the AI's answers are faked). `test_real_jobs.py` holds regression tests from real job postings: each mistake HireOps made on a real job became a test, so it can't come back. GitHub Actions runs Ruff and the tests on every push.
 
 ### Limitations
 
@@ -130,23 +130,17 @@ Every push to main builds the image and publishes it to `ghcr.io/5hayam0hebbi/hi
 
 `infra/` deploys the image to Azure Container Apps as an on-demand job (rules-only mode). See `infra/terraform.tfvars.example`, then `terraform init && terraform apply`. `terraform destroy` removes everything.
 
-## The HireOps web app (preview)
-
-One app on your own laptop. From the `hireops` folder, with the Python box active:
+## Web app
 
     streamlit run app.py
 
-Your browser opens at http://localhost:8501. On the **JD Decoder** page:
+Opens HireOps in your browser, on your own laptop. Three pages:
 
-1. Paste a Greenhouse or Lever job link, or paste the job text (works for any site, including LinkedIn and Workday career sites).
-2. Upload your resume: PDF, Word (.docx), .txt or .md.
-3. Click **Decode**. You'll see the skills the AI found, your match score, the missing skills, skills possibly shown in other words (with your own resume line as proof) and suggested bullets, with a warning on any number your resume doesn't contain.
+- **JD Decoder:** paste a job link (Greenhouse, Lever or Ashby) or the job text, upload your resume (PDF, Word, .txt or .md) and click Decode. Then tick the suggested bullets you want, edit them (any number your resume doesn't contain is flagged as you type), choose the section they go in, preview the result and download a new copy named after the job, such as `resume-northwind-sre.docx`. A Word resume keeps its formatting; a PDF's copy is saved as Word or Markdown. Your original file is never changed.
+- **Interview Coach:** likely interview questions for a job, tied to its must-haves (template questions when the AI is off). Type an answer to get a STAR score, one tip and a tighter version, with a warning if the rewrite adds a number you never said. Save answers to your own answer bank in `private/answers.json`.
+- **Job Radar:** new matching roles at the companies in `radar_config.json`, scored against your resume, as a sortable table with links. **Mark these as seen** hides them next time.
 
-Turn **Use the AI** off for a fast rules-only check. If Ollama isn't running, the page says so and uses rules only.
-
-**Privacy:** your resume is read on your computer and never uploaded. Job links are read only through Greenhouse's and Lever's public job-board APIs; for any other site, you paste the text.
-
-Coming next: edit the suggested bullets, add them to your resume and download a copy named after the job; then the Interview Coach page.
+Everything runs on your laptop: the AI is local (Ollama), your resume is never uploaded, and job links are read only through public job-board APIs.
 
 ## Security
 
