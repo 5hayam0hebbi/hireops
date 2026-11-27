@@ -1,6 +1,10 @@
 # test_app.py - checks the web pages work, in a pretend browser (no AI, no internet)
 from streamlit.testing.v1 import AppTest
 
+import decoder
+from decoder import Bullet, Decoded
+from matcher import MatchResult
+
 JOB = "Senior SRE. You will run Kubernetes on Azure with Terraform and Python."
 WAIT = 30  # seconds a page may take to run; GitHub's computers can be slow
 
@@ -25,3 +29,38 @@ def test_linkedin_link_asks_you_to_paste():
     page.text_input[0].input("https://www.linkedin.com/jobs/view/4000000001/")
     page.button[0].click().run(timeout=WAIT)
     assert "paste it into the box" in page.info[0].value
+
+
+
+RESUME = b"""# Alex Rivera
+Director, Site Reliability Engineering
+- Led a team of 25 engineers running 24x7 operations
+- Ran incident management for 300+ critical applications
+"""
+BULLET = "Led incident management for 300+ critical applications with a 24x7 team"
+
+
+def fake_decode(job_text, resume_text="", use_ai=True, progress=None):
+    """Stands in for decode(): one suggested bullet, no AI, no waiting."""
+    found = Decoded(wanted=["Incident management"], used_ai=True)
+    found.result = MatchResult(wanted=found.wanted, have=found.wanted)
+    found.bullets = [
+        Bullet(BULLET, [], source="Ran incident management for 300+ critical applications")
+    ]
+    return found
+
+
+def test_add_a_bullet_and_download_a_copy(monkeypatch):
+    monkeypatch.setattr(decoder, "decode", fake_decode)  # the page gets the fake
+    page = AppTest.from_file("pages/1_JD_Decoder.py").run(timeout=WAIT)
+    page.text_area[0].input(JOB)
+    page.file_uploader[0].upload("resume.md", RESUME, "text/markdown")
+    page.button[0].click().run(timeout=WAIT)
+    page.checkbox[0].check().run(timeout=WAIT)  # tick Include on bullet 1
+    page.text_area[1].input(BULLET + " in 2031").run(timeout=WAIT)  # edit it
+    assert not page.exception
+    assert "2031 is not in your resume" in [w.value for w in page.warning]
+    assert page.selectbox[0].value == 0  # its source line's section is picked
+    assert page.download_button[0].proto.label == "Download updated resume"
+    shown = " ".join(c.value for c in page.caption)
+    assert "resume-job.md" in shown  # no job name typed, so "job"

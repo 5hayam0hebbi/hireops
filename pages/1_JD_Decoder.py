@@ -2,6 +2,8 @@
 import requests
 import streamlit as st
 
+import resume_edit as edit
+from bullets import unsupported_numbers
 from decoder import decode
 from links import UnsupportedLink, job_from_link
 from resume_files import KINDS, read_resume
@@ -24,6 +26,8 @@ def get_job_text(link, pasted):
         st.warning("Couldn't read that link right now. Paste the job text instead.")
         return ""
     st.success(f'Read "{job["title"]}" from the {job["company"]} job board.')
+    # Remembered for the new resume's file name, e.g. resume-northwind-senior-sre.docx
+    st.session_state["job_name"] = f"{job['company']} {job['title']}"
     return job["description"]
 
 def get_resume_text(upload):
@@ -118,6 +122,63 @@ def show(decoded):
 
 
 st.title("JD Decoder")
+
+def add_bullets(decoded):
+    """Pick and edit bullets, choose where they go, and download a NEW resume copy."""
+    name, data = st.session_state["resume_file"]  # saved when you clicked Decode
+    resume_text = st.session_state["resume_text"]
+    run = st.session_state["run"]  # changes on every Decode, so old boxes reset
+    st.subheader("Add bullets to your resume")
+    chosen, first_source = [], ""
+    for number, bullet in enumerate(decoded.bullets, start=1):
+        include = st.checkbox(f"Include bullet {number}", key=f"include_{run}_{number}")
+        # value= is only the starting text: whatever you type in the box wins
+        text = st.text_area(
+            f"Bullet {number}", value=bullet.text, key=f"bullet_{run}_{number}"
+        )
+        # The same check as before, on YOUR edited words, every time the page runs
+        invented = sorted(unsupported_numbers(text, resume_text))
+        if invented:
+            st.warning(f"{', '.join(invented)} is not in your resume")
+        if include and text.strip():
+            chosen.append(text.strip())
+            first_source = first_source or bullet.source
+    if not chosen:
+        st.caption("Tick Include on a bullet to add it to a copy of your resume.")
+        return
+
+    places = edit.places_for(name, data, resume_text)
+    where = st.selectbox(
+        "Where should the bullets go?",
+        range(len(places)),  # the choices are numbers 0, 1, 2...
+        index=edit.suggested(places, first_source),  # the section of its source line
+        format_func=lambda number: places[number].label,  # ...shown as labels
+    )
+    job_name = st.text_input(
+        "Job name for the new file", value=st.session_state.get("job_name", "")
+    )
+    pdf_as = "docx"
+    if name.lower().endswith(".pdf"):
+        choice = st.radio(
+            "A PDF can't be edited reliably. Save the updated copy as:",
+            ["Word (.docx)", "Markdown (.md)"],
+        )
+        pdf_as = "md" if choice.startswith("Markdown") else "docx"
+    new_data = edit.updated_resume(
+        name, data, resume_text, places[where].start, chosen, pdf_as
+    )
+    file_name = edit.download_name(job_name, name, pdf_as)
+    with st.expander("Preview the updated resume"):
+        st.text(read_resume(file_name, new_data))  # st.text shows it exactly as is
+    st.download_button(
+        "Download updated resume",
+        data=new_data,
+        file_name=file_name,
+        mime=edit.MIME[edit.output_kind(name, pdf_as)],
+    )
+    st.caption(f"Saves {file_name}. Your original file is never changed.")
+
+
 st.caption(
     "Add a job and your resume, then click Decode. Everything stays on this computer."
 )
@@ -133,6 +194,7 @@ use_ai = st.toggle(
 
 # st.button returns True only on the run right after you click it
 if st.button("Decode", type="primary"):
+    st.session_state.pop("job_name", None)  # forget the last job's name
     job_text = get_job_text(link, pasted)  # .strip() removes spaces and blank lines at both ends
     resume_text = get_resume_text(upload)
     if not job_text:
@@ -144,6 +206,17 @@ if st.button("Decode", type="primary"):
             box.update(label="Decoded", state="complete", expanded=False)
         # session_state keeps values between reruns, so the results stay on screen
         st.session_state["decoded"] = decoded
+        st.session_state["job_text"] = job_text  # the Interview Coach page uses it
+        st.session_state["resume_text"] = resume_text
+        if resume_text:  # the file itself, for the updated copy
+            st.session_state["resume_file"] = (upload.name, upload.getvalue())
+        else:
+            st.session_state.pop("resume_file", None)  # pop = remove, if it's there
+        st.session_state["run"] = st.session_state.get("run", 0) + 1
+        if decoded.insights and not st.session_state.get("job_name"):
+            st.session_state["job_name"] = decoded.insights.role_title
 
 if "decoded" in st.session_state:
     show(st.session_state["decoded"])
+    if st.session_state["decoded"].bullets and "resume_file" in st.session_state:
+        add_bullets(st.session_state["decoded"])

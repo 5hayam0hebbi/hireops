@@ -45,6 +45,9 @@ FILLER = {
     "tools",
     "understanding",
     "with",
+    "proven",
+    "as",
+    "strong",
 }
 
 
@@ -70,8 +73,19 @@ def skill_pattern(skill: str) -> str:
     return r"\b" + re.escape(skill) + r"s?\b"
 
 
+
+# Words that start the posting's examples: "IaC tools like Terraform or ARM"
+EXAMPLES = re.compile(r"\s+(?:like|such as|including|e\.g\.)\s+", re.IGNORECASE)
+
+
 def mentions(text: str, skill: str) -> bool:
     """True if the text mentions the skill as a whole word, in any letter case."""
+    skill = skill.strip(" .,;:")  # "Terraform or ARM." -> "Terraform or ARM"
+    # "tools like Terraform or ARM": the general part or any example counts
+    head, *examples = EXAMPLES.split(skill, maxsplit=1)
+    if examples:
+        names = [head] + re.split(r"\s*,\s*|\s+or\s+|\s+and\s+", examples[0])
+        return any(mentions(text, name) for name in names if name.strip(" .,"))
     # "SQL or PromQL querying": showing either one counts
     parts = re.split(r"\s+or\s+", skill, flags=re.IGNORECASE)
     if len(parts) > 1:

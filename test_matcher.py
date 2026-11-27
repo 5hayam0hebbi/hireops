@@ -137,3 +137,16 @@ def test_dropped_facts_are_noted():
     old = "Moved workloads to Azure and Docker containers"
     new = "Moved workloads to Azure as part of the SDLC"
     assert dropped_names(old, new) == {"Docker"}
+
+
+def test_example_tools_after_like_count():
+    assert mentions("Built Terraform modules", "IaC tools like Terraform or ARM.")
+
+
+def test_examples_are_not_a_free_pass():
+    assert not mentions("Python developer", "IaC tools like Terraform or ARM.")
+
+
+def test_a_long_requirement_matches_its_core_words():
+    resume = "Senior DevOps and Cloud Engineer | Azure and AKS"
+    assert mentions(resume, "Proven experience as a DevOps Engineer with a focus on Azure and AKS.")
