@@ -13,9 +13,13 @@ st.subheader("Pages")
 # page_link makes a clickable link to another page of this app
 st.page_link(
     "pages/1_JD_Decoder.py",
-    label="JD Decoder: what a job really asks for, and how your resume matches",
+    label="JD Decoder: what a job asks for, your match, and bullets for your resume",
 )
-st.caption("Coming next: Job Radar, Interview Coach, Pipeline and Search SLOs.")
+st.page_link(
+    "pages/2_Interview_Coach.py",
+    label="Interview Coach: likely questions for a job, and STAR feedback",
+)
+st.caption("Coming next: Job Radar, Pipeline and Search SLOs.")
 
 st.subheader("Your privacy")
 st.write(

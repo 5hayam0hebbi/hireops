@@ -1,6 +1,7 @@
 # test_app.py - checks the web pages work, in a pretend browser (no AI, no internet)
 from streamlit.testing.v1 import AppTest
 
+import coach
 import decoder
 from decoder import Bullet, Decoded
 from matcher import MatchResult
@@ -64,3 +65,18 @@ def test_add_a_bullet_and_download_a_copy(monkeypatch):
     assert page.download_button[0].proto.label == "Download updated resume"
     shown = " ".join(c.value for c in page.caption)
     assert "resume-job.md" in shown  # no job name typed, so "job"
+
+
+def test_coach_page_with_rules_only(monkeypatch, tmp_path):
+    monkeypatch.setattr(coach, "BANK", tmp_path / "answers.json")  # not private/
+    page = AppTest.from_file("pages/2_Interview_Coach.py").run(timeout=WAIT)
+    page.text_area[0].input(JOB)
+    page.toggle[0].set_value(False)  # AI off: template questions
+    page.button[0].click().run(timeout=WAIT)  # Get likely questions
+    assert not page.exception
+    shown = " ".join(item.value for item in page.markdown)
+    assert "Tell me about a time you used Kubernetes" in shown
+    page.text_area[1].input("I led the bridge for 3 hours.").run(timeout=WAIT)
+    assert page.button[1].disabled  # STAR feedback needs the AI
+    page.button[2].click().run(timeout=WAIT)  # Save to my answer bank
+    assert "Saved: 1 in your bank" in page.success[0].value
