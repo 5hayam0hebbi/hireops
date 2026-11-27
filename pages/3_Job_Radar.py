@@ -22,6 +22,8 @@ resume_text = st.session_state.get("resume_text", "")
 upload = st.file_uploader("Your resume (or decode a job first)", type=KINDS)
 if upload is not None:
     resume_text = read_resume(upload.name, upload.getvalue())
+if upload is None and resume_text:
+    st.caption("Using the resume from the JD Decoder page. Upload another to change it.")    
 show_all = st.checkbox("Include roles I've seen before")
 
 if st.button("Check the job boards now", type="primary"):
